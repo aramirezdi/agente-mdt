@@ -1,0 +1,50 @@
+{
+  "aramdiaz": {
+    "name": "Ana Ramirez",
+    "role": "admin",
+    "salt": "861c0e66417864995e9e95defa1ba21fc451f02203425f7644ffdaee01da9027",
+    "password": "65ce41aa42d5264af918325fbc383f8633f350861106c07b2ee84ea05383154d",
+    "created": "2026-03-26T11:53:39.253085",
+    "active": true
+  },
+  "mferrari": {
+    "name": "Monica Ferrari",
+    "role": "user",
+    "salt": "e590b28d1b0dc7501836c0bb16fc80836d2623a6faedfe2c0c45521c71c2b807",
+    "password": "80f9d35956be644d02eab33ac1a4364a467edc1af70ba24df29f859aef6af5f5",
+    "created": "2026-03-27T18:44:14.173693",
+    "active": true
+  },
+  "salcantara": {
+    "name": "Samantha Alcantara",
+    "role": "admin",
+    "salt": "2df920b6cae3340a2824bf03ae690278d34e1caeedfa88dfdb2cad4eb2a7e21d",
+    "password": "be8aa6aeba0dad502fa5a2f78db03281dcd1bf6c96ebffeea4e8079b5163e6e8",
+    "created": "2026-03-27T18:45:04.889626",
+    "active": true
+  },
+  "malcantara": {
+    "name": "Sabrina Alcantara",
+    "role": "admin",
+    "salt": "70f1f3570ea5a83407a5ada0d98400de7534177225ea4f728cc358e178b9e47c",
+    "password": "64cbfcbfcc37b1e25c27a4aee6a5772cd0ecd8416de2ea72b2912e8e534aea12",
+    "created": "2026-03-27T18:45:52.244725",
+    "active": true
+  },
+  "hapaza": {
+    "name": "Heleen Apaza",
+    "role": "user",
+    "salt": "683c56a1bf13ba1473611da6576fda91953113262eeda221eba2f45571e03558",
+    "password": "a287e6339b412f39f2a3be0178ede7112eb1640c503e2130d468dba5d62d8fd0",
+    "created": "2026-03-27T18:48:39.736529",
+    "active": true
+  },
+  "tmerlin": {
+    "name": "Tutor Merlin",
+    "role": "user",
+    "salt": "115ff7ee668813f4cf487043f3df1fb9f1869708382209db90d6f7f7922071ae",
+    "password": "fd286f8ff20af0bc3b39ba383a4ac5cf3bc03ab18307bd9f03ada53eee244d2f",
+    "created": "2026-03-27T18:50:10.568893",
+    "active": true
+  }
+}
