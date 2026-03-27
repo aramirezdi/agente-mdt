@@ -1,0 +1,12 @@
+credentials.json
+users.json
+history.json
+scheduled.json
+banners/
+__pycache__/
+*.pyc
+*.pyo
+.env
+test_sp.py
+server.py
+server_v2.py
