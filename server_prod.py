@@ -507,14 +507,13 @@ class Handler(BaseHTTPRequestHandler):
         token = get_sp_token()
         if not token:
             self.send_json({"error":"SendPulse no configurado o error al obtener token."}); return
-        # API Key directa usa header diferente
-        api_key = creds.get("sp_api_key","")
         auth_header = f"Bearer {token}"
         r = self._req(
             "https://api.sendpulse.com/smtp/emails",
             {"email": p.get("message")},
             {"Content-Type":"application/json","Authorization":auth_header}
         )
+        print(f"  SP response: {str(r)[:200]}")
         self.send_json(r)
 
 
