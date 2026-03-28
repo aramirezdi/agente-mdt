@@ -29,19 +29,17 @@ def load_creds():
     env_creds = {}
     for key in ["zoho_client_id","zoho_client_secret","zoho_refresh_token",
                 "zoho_access_token","zoho_account_id","sp_client_id",
-                "sp_client_secret","anthropic_key"]:
+                "sp_client_secret","anthropic_key","wa_token","wa_phone_id","wa_waba_id"]:
         val = os.environ.get(key.upper(),"")
         if val: env_creds[key] = val
     if env_creds:
-        # Mezclar con credentials.json si existe
         file_creds = {}
         if os.path.exists(CREDENTIALS_FILE):
             try:
                 with open(CREDENTIALS_FILE,"r") as f:
                     file_creds = json.load(f)
             except: pass
-        merged = {**file_creds, **env_creds}
-        return merged
+        return {**file_creds, **env_creds}
     if not os.path.exists(CREDENTIALS_FILE):
         return {}
     try:
@@ -133,7 +131,6 @@ def _req_static(url, data=None, headers=None):
 
 # ── Usuarios ──
 def load_users():
-    # En Railway, leer desde variable de entorno USERS_JSON
     users_env = os.environ.get("USERS_JSON","")
     if users_env:
         try:
@@ -395,6 +392,8 @@ class Handler(BaseHTTPRequestHandler):
             "/api/schedule-save":   self._schedule_save,
             "/api/schedule-list":   self._schedule_list,
             "/api/schedule-delete": self._schedule_delete,
+            "/api/wa-send":         self._wa_send,
+            "/api/wa-status":       self._wa_status,
         }
         h = routes.get(path)
         if h:
@@ -664,6 +663,49 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json({"error":str(e)})
 
 
+    # ── WhatsApp Business API ──
+    def _wa_send(self, p):
+        creds = load_creds()
+        token    = p.get("token") or creds.get("wa_token","")
+        phone_id = p.get("phone_id") or creds.get("wa_phone_id","")
+        to       = p.get("to","").replace("+","").replace(" ","").replace("-","")
+        msg_type = p.get("type","text")
+        if not token or not phone_id or not to:
+            self.send_json({"error":"Faltan credenciales de WhatsApp o número destino."}); return
+        # Construir payload según tipo
+        if msg_type == "template":
+            payload = {
+                "messaging_product": "whatsapp",
+                "to": to,
+                "type": "template",
+                "template": {
+                    "name": p.get("template_name","hello_world"),
+                    "language": {"code": p.get("lang","es_MX")},
+                    "components": p.get("components",[])
+                }
+            }
+        else:
+            payload = {
+                "messaging_product": "whatsapp",
+                "to": to,
+                "type": "text",
+                "text": {"body": p.get("message","Hola desde MDT")}
+            }
+        r = self._req(
+            f"https://graph.facebook.com/v21.0/{phone_id}/messages",
+            payload,
+            {"Content-Type":"application/json","Authorization":f"Bearer {token}"}
+        )
+        self.send_json(r)
+
+    def _wa_status(self, p):
+        creds = load_creds()
+        self.send_json({
+            "configured": bool(creds.get("wa_token") and creds.get("wa_phone_id")),
+            "phone_id": creds.get("wa_phone_id",""),
+            "waba_id": creds.get("wa_waba_id","")
+        })
+
 # ── Scheduler en background ──
 def run_scheduled_tasks():
     """Ejecuta tareas programadas en un thread separado"""
@@ -779,7 +821,7 @@ def execute_scheduled_task(task):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
     if not load_users():
-        print("\n  No hay usuarios. Configura la variable USERS_JSON en Railway.\n")
+        print("\n  No hay usuarios. Configura USERS_JSON en Railway.\n")
         exit(1)
     print("=" * 50)
     print("  Agente MDT Seguro v4 — Produccion")
