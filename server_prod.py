@@ -133,6 +133,12 @@ def _req_static(url, data=None, headers=None):
 
 # ── Usuarios ──
 def load_users():
+    # En Railway, leer desde variable de entorno USERS_JSON
+    users_env = os.environ.get("USERS_JSON","")
+    if users_env:
+        try:
+            return json.loads(users_env)
+        except: pass
     if not os.path.exists(USERS_FILE):
         return {}
     with open(USERS_FILE, "r") as f:
@@ -772,8 +778,8 @@ def execute_scheduled_task(task):
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
-    if not os.path.exists(USERS_FILE) or not load_users():
-        print("\n  No hay usuarios. Ejecuta: python manage_users.py init\n")
+    if not load_users():
+        print("\n  No hay usuarios. Configura la variable USERS_JSON en Railway.\n")
         exit(1)
     print("=" * 50)
     print("  Agente MDT Seguro v4 — Produccion")
