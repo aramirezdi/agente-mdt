@@ -504,7 +504,9 @@ class Handler(BaseHTTPRequestHandler):
     # ── SendPulse: enviar ──
     def _sp_send(self, p):
         creds = load_creds()
+        print(f"  SP send - sp_id: {bool(creds.get('sp_client_id'))}, sp_sec: {bool(creds.get('sp_client_secret'))}")
         token = get_sp_token()
+        print(f"  SP token obtenido: {bool(token)}")
         if not token:
             self.send_json({"error":"SendPulse no configurado o error al obtener token."}); return
         auth_header = f"Bearer {token}"
@@ -513,7 +515,7 @@ class Handler(BaseHTTPRequestHandler):
             {"email": p.get("message")},
             {"Content-Type":"application/json","Authorization":auth_header}
         )
-        print(f"  SP response: {str(r)[:200]}")
+        print(f"  SP response: {str(r)[:300]}")
         self.send_json(r)
 
 
