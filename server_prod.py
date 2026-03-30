@@ -510,9 +510,12 @@ class Handler(BaseHTTPRequestHandler):
         if not token:
             self.send_json({"error":"SendPulse no configurado o error al obtener token."}); return
         auth_header = f"Bearer {token}"
+        msg = p.get("message")
+        print(f"  SP msg keys: {list(msg.keys()) if isinstance(msg, dict) else type(msg)}")
+        print(f"  SP html inicio: {repr(str(msg.get('html',''))[:80]) if isinstance(msg, dict) else 'NO DICT'}")
         r = self._req(
             "https://api.sendpulse.com/smtp/emails",
-            {"email": p.get("message")},
+            {"email": msg},
             {"Content-Type":"application/json","Authorization":auth_header}
         )
         print(f"  SP response: {str(r)[:300]}")
