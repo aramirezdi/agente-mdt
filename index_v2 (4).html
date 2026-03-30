@@ -1,0 +1,1669 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Agente MDT — Comunicaciones</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#0f0f12;--surface:#18181e;--surface2:#202028;--border:#2a2a36;--border2:#3a3a48;
+  --text:#eeeef5;--muted:#8a8aaa;--hint:#4a4a62;
+  --purple:#7c6ffc;--purple-bg:rgba(124,111,252,0.1);--purple-border:#3d3880;
+  --green:#3ecf8e;--green-bg:#0e2e20;--green-border:#1a5a38;
+  --amber:#f5a623;--amber-bg:#2e1e08;--amber-border:#5a3c10;
+  --red:#f05252;--red-bg:#2e0e0e;--red-border:#5a2020;
+  --r:10px;--font:'DM Sans',sans-serif;--mono:'DM Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;padding:32px 20px}
+.wrap{max-width:860px;margin:0 auto}
+.hdr{display:flex;align-items:center;gap:14px;margin-bottom:28px}
+.logo{width:44px;height:44px;background:var(--purple);border-radius:12px;display:grid;place-items:center;font-size:20px;font-weight:700;color:#fff;flex-shrink:0}
+.hdr h1{font-size:20px;font-weight:600;letter-spacing:-.4px}
+.hdr p{font-size:13px;color:var(--muted);margin-top:2px}
+.setup{background:var(--surface);border:1px solid var(--amber-border);border-radius:var(--r);padding:22px;margin-bottom:20px}
+.setup-title{font-size:13px;font-weight:600;margin-bottom:16px;color:var(--amber)}
+.setup-sec{margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--border)}
+.setup-sec:last-of-type{border-bottom:none;margin-bottom:0;padding-bottom:0}
+.setup-sec-ttl{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px}
+.ttl-zoho{color:var(--amber)}.ttl-sp{color:var(--green)}.ttl-ai{color:var(--purple)}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:10px}
+.g2 .span2{grid-column:1/-1}
+.sp-note{font-size:11px;color:var(--muted);padding:7px 11px;background:var(--surface2);border-radius:6px;border-left:2px solid var(--green-border);margin-top:4px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:14px}
+.card-ttl{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:16px}
+label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px;font-weight:500}
+input,textarea,select{width:100%;padding:8px 11px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:var(--font);font-size:13px;outline:none;transition:border-color .18s}
+input:focus,textarea:focus,select:focus{border-color:var(--purple)}
+input::placeholder,textarea::placeholder{color:var(--hint)}
+textarea{resize:vertical;line-height:1.6}
+.mono{font-family:var(--mono);font-size:12px}
+.g2f{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:12px}
+.f1{margin-bottom:12px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:7px;font-size:13px;font-weight:500;cursor:pointer;border:none;font-family:var(--font);transition:all .15s}
+.btn-p{background:var(--purple);color:#fff}.btn-p:hover{background:#6b5ef0}.btn-p:disabled{opacity:.35;cursor:not-allowed}
+.btn-g{background:var(--surface2);color:var(--text);border:1px solid var(--border)}.btn-g:hover{border-color:var(--border2)}
+.btn-sm{padding:6px 12px;font-size:12px}
+.btn-red{background:var(--red-bg);color:var(--red);border:1px solid var(--red-border)}.btn-red:hover{opacity:.8}
+.brow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.type-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.tc{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;cursor:pointer;transition:all .18s;user-select:none}
+.tc:hover{border-color:var(--border2)}.tc.on{border-color:var(--purple);background:var(--purple-bg)}
+.tc-icon{font-size:18px;margin-bottom:5px}.tc-name{font-size:13px;font-weight:500}
+.tc-desc{font-size:11px;color:var(--muted);margin-top:2px}.tc.on .tc-desc{color:var(--purple)}
+.st-hdr{display:grid;gap:8px;padding:0 4px;margin-bottom:6px}
+.st-hdr span{font-size:11px;color:var(--hint);font-weight:600;text-transform:uppercase;letter-spacing:.4px}
+.st-row{display:grid;gap:8px;margin-bottom:7px;align-items:center}
+.st-row input{padding:7px 10px;font-size:12px}
+.rm{background:none;border:none;color:var(--hint);cursor:pointer;font-size:18px;line-height:1;width:26px;text-align:center;transition:color .15s}.rm:hover{color:var(--red)}
+.add-lnk{font-size:12px;color:var(--purple);background:none;border:none;cursor:pointer;padding:4px 0;font-weight:600}.add-lnk:hover{opacity:.75}
+.paste-sep{border-top:1px solid var(--border);margin-top:14px;padding-top:14px}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600;background:var(--purple-bg);color:var(--purple);border:1px solid var(--purple-border)}
+.dot{width:5px;height:5px;border-radius:50%;background:currentColor}
+.prev-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-bottom:5px}
+.prev-box{background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:12px;font-size:13px;line-height:1.75;min-height:55px;white-space:pre-wrap}
+.prev-box.empty{color:var(--hint);font-style:italic}
+.prev-subj{min-height:unset;font-weight:600}
+.prev-html{min-height:200px;padding:0;overflow:hidden}
+.prev-html iframe{width:100%;border:none;border-radius:7px;min-height:200px}
+.st{display:flex;align-items:center;gap:8px;padding:9px 13px;border-radius:7px;font-size:13px;margin-top:10px;border:1px solid}
+.st.info{background:var(--purple-bg);color:var(--purple);border-color:var(--purple-border)}
+.st.ok{background:var(--green-bg);color:var(--green);border-color:var(--green-border)}
+.st.err{background:var(--red-bg);color:var(--red);border-color:var(--red-border)}
+.st.warn{background:var(--amber-bg);color:var(--amber);border-color:var(--amber-border)}
+.spin{width:13px;height:13px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:sp .7s linear infinite;flex-shrink:0}
+@keyframes sp{to{transform:rotate(360deg)}}
+.log{display:flex;flex-direction:column;gap:5px;margin-top:10px}
+.lr{display:flex;gap:8px;padding:7px 11px;border-radius:7px;font-size:12px;align-items:flex-start}
+.lr.ok{background:var(--green-bg);color:var(--green)}.lr.err{background:var(--red-bg);color:var(--red)}
+.lt{flex-shrink:0;opacity:.6;font-family:var(--mono)}
+.mb{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600}
+.mb-zoho{background:rgba(245,166,35,.12);color:var(--amber);border:1px solid var(--amber-border)}
+.mb-sp{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border)}
+.tabs{display:flex;gap:3px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:3px;margin-bottom:18px}
+.tab{flex:1;padding:7px;font-size:13px;font-weight:500;cursor:pointer;border:none;background:none;color:var(--muted);border-radius:7px;font-family:var(--font);transition:all .15s;text-align:center}
+.tab.on{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+.sec{display:none}.sec.on{display:block}
+.from-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:6px}
+.from-info p{font-size:13px}.from-info span{color:var(--purple);font-weight:600}
+.from-info small{font-size:12px;color:var(--muted);display:block;margin-top:2px}
+.conn-ok{display:none;align-items:center;gap:8px;padding:9px 13px;background:var(--green-bg);border:1px solid var(--green-border);border-radius:7px;color:var(--green);font-size:13px;margin-top:10px}
+.conn-ok.show{display:flex}
+
+/* Banners */
+.prog-card{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:12px}
+.prog-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;cursor:pointer}
+.prog-name{font-size:14px;font-weight:500}
+.prog-body{display:none}.prog-body.open{display:block}
+.banner-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:4px}
+.banner-item label{font-size:11px;margin-bottom:3px}
+.banner-item input{font-size:11px;padding:6px 9px}
+.banner-preview{width:100%;height:40px;object-fit:cover;border-radius:4px;margin-top:4px;display:none;border:1px solid var(--border)}
+.chevron{font-size:12px;color:var(--muted);transition:transform .2s}
+.chevron.open{transform:rotate(180deg)}
+.new-prog-row{display:flex;gap:8px;margin-top:8px}
+.new-prog-row input{flex:1}
+.banner-card{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;display:flex;align-items:center;gap:12px;margin-bottom:8px}
+.banner-thumb{width:80px;height:45px;object-fit:cover;border-radius:4px;flex-shrink:0;background:var(--border)}
+.banner-info{flex:1;min-width:0}
+.banner-info p{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.banner-info span{font-size:11px;color:var(--muted)}
+.resend-btn{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600;background:var(--purple-bg);color:var(--purple);border:1px solid var(--purple-border);cursor:pointer}
+.resend-btn:hover{opacity:.8}
+.svc-btn-active{background:var(--purple)!important;color:#fff!important;border-color:var(--purple)!important}
+#schedule-modal.show{display:flex!important}
+.prog-card-item{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:10px}
+.prog-status-pending{color:var(--amber)}
+.prog-status-done{color:var(--green)}
+.prog-status-error{color:var(--red)}
+#resend-modal.show{display:flex}
+.hist-detail{font-size:11px;color:var(--muted);margin-top:4px;font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:400px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="hdr">
+  <img src="https://merlin-global.com/assets/merlin-logo-BbzWVHUY.png" alt="Merlin" style="height:44px;width:auto;object-fit:contain;flex-shrink:0"/>
+  <div>
+    <h1>Agente de Comunicaciones MDT</h1>
+    <p>Correos HTML personalizados con IA · <strong>support@mdt.edu.pe</strong></p>
+  </div>
+</div>
+
+<!-- Configuración -->
+<div id="setup-wrapper" style="display:none">
+
+  <div id="zoho-setup" class="setup">
+    <div class="setup-title" style="color:var(--amber)">⚙ Zoho Mail — conectar cuenta</div>
+    <div class="setup-sec">
+      <div class="sp-note" style="margin-bottom:12px">Ve a <strong>api-console.zoho.com</strong> → Self Client → Generate Code<br/>Scope: <code>ZohoMail.messages.CREATE,ZohoMail.accounts.READ</code></div>
+      <div class="g2">
+        <div><label>Client ID</label><input id="cfg-cid" class="mono" value="1000.A60FUA305EN81KAZHK3ZXK9GIA34SP"/></div>
+        <div><label>Client Secret</label><input id="cfg-cs" class="mono" value="72596115508d63ae303b4290e4e11275c716398829"/></div>
+        <div class="span2"><label>Código de autorización (válido 10 min)</label><input id="cfg-code" class="mono" placeholder="1000.xxxxxxxx.xxxxxxxx"/></div>
+      </div>
+      <div class="brow">
+        <button class="btn btn-p btn-sm" onclick="conectarZoho()">Conectar Zoho</button>
+        <span id="zoho-msg" style="font-size:12px;color:var(--muted)"></span>
+      </div>
+    </div>
+  </div>
+
+  <div id="sp-setup" class="setup" style="border-color:var(--green-border)">
+    <div class="setup-title" style="color:var(--green)">⚡ SendPulse — envíos masivos (opcional)</div>
+    <div class="setup-sec">
+      <div class="g2">
+        <div><label>API User ID</label><input id="cfg-spid" class="mono" placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"/></div>
+        <div><label>API Secret</label><input id="cfg-spsec" class="mono" type="password" placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"/></div>
+      </div>
+      <div class="sp-note" style="margin-bottom:10px">≤ 20 destinatarios → Zoho &nbsp;|&nbsp; > 20 → SendPulse automáticamente</div>
+      <div class="brow">
+        <button class="btn btn-p btn-sm" onclick="guardarSP()">Guardar SendPulse</button>
+        <span id="sp-msg" style="font-size:12px;color:var(--muted)"></span>
+      </div>
+    </div>
+  </div>
+
+  <div id="ai-setup" class="setup" style="border-color:var(--purple-border)">
+    <div class="setup-title" style="color:var(--purple)">🤖 Anthropic — API Key de Claude</div>
+    <div class="setup-sec">
+      <div><label>API Key</label><input id="cfg-akey" class="mono" type="password" placeholder="sk-ant-xxxxxxxxxxxxxxxx"/></div>
+      <div class="brow" style="margin-top:10px">
+        <button class="btn btn-p btn-sm" onclick="guardarAI()">Guardar API Key</button>
+        <span id="ai-msg" style="font-size:12px;color:var(--muted)"></span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Tabs -->
+<div class="tabs">
+  <button class="tab on" onclick="switchTab('envio',this)">Nuevo envío</button>
+  <button class="tab" onclick="switchTab('whatsapp',this)">💬 WhatsApp</button>
+  <button class="tab" onclick="switchTab('banners',this)">Banners</button>
+  <button class="tab" onclick="switchTab('programados',this)">🕐 Programados</button>
+  <button class="tab" onclick="switchTab('historial',this)">Historial</button>
+</div>
+
+<!-- TAB Envío -->
+<div id="tab-envio" class="sec on">
+  <div class="card">
+    <div class="card-ttl">Tipo de correo</div>
+    <div class="type-grid">
+      <div class="tc on" onclick="selType('masterclass')" id="tc-masterclass"><div class="tc-icon">📅</div><div class="tc-name">Confirmación Masterclass</div><div class="tc-desc">Asistencia a clases en vivo</div></div>
+      <div class="tc" onclick="selType('bienvenida')" id="tc-bienvenida"><div class="tc-icon">👋</div><div class="tc-name">Bienvenida</div><div class="tc-desc">Nuevos estudiantes</div></div>
+      <div class="tc" onclick="selType('tarea')" id="tc-tarea"><div class="tc-icon">📝</div><div class="tc-name">Recordatorio de tarea</div><div class="tc-desc">Entregas y actividades</div></div>
+      <div class="tc" onclick="selType('seguimiento')" id="tc-seguimiento"><div class="tc-icon">📊</div><div class="tc-name">Seguimiento</div><div class="tc-desc">Monitoreo de progreso</div></div>
+      <div class="tc" onclick="selType('certificado')" id="tc-certificado"><div class="tc-icon">🎓</div><div class="tc-name">Certificado</div><div class="tc-desc">Módulo completado</div></div>
+      <div class="tc" onclick="selType('pago')" id="tc-pago"><div class="tc-icon">💳</div><div class="tc-name">Pago / Renovación</div><div class="tc-desc">Recordatorio de cuota</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-ttl" id="fields-title">Datos</div>
+    <div id="dyn-fields"></div>
+    <!-- Imagen de contenido -->
+    <div style="border-top:1px solid var(--border);margin-top:12px;padding-top:14px">
+      <label style="margin-bottom:8px;display:block">Imagen de contenido del correo (opcional)</label>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+        <button class="btn btn-g btn-sm" onclick="selContentImg('upload')" id="cimg-btn-upload">Subir imagen</button>
+        <button class="btn btn-g btn-sm" onclick="selContentImg('saved')" id="cimg-btn-saved">De banners guardados</button>
+        <button class="btn btn-g btn-sm" onclick="selContentImg('url')" id="cimg-btn-url">URL externa</button>
+        <button class="btn btn-g btn-sm" onclick="clearContentImg()" style="color:var(--red);font-size:11px">✕ Quitar</button>
+      </div>
+      <div id="cimg-upload-area" style="display:none;margin-bottom:8px">
+        <div onclick="document.getElementById('cimg-file-input').click()"
+          style="border:2px dashed var(--border2);border-radius:7px;padding:12px;text-align:center;cursor:pointer;font-size:12px;color:var(--muted)">
+          Haz clic o arrastra una imagen aquí
+        </div>
+        <input type="file" id="cimg-file-input" accept="image/*" style="display:none" onchange="handleContentImgFile(this.files[0])"/>
+      </div>
+      <div id="cimg-saved-area" style="display:none;margin-bottom:8px">
+        <select id="cimg-saved-sel" onchange="setContentImgFromSaved(this.value)" style="font-size:12px">
+          <option value="">Selecciona un banner guardado...</option>
+        </select>
+      </div>
+      <div id="cimg-url-area" style="display:none;margin-bottom:8px">
+        <input id="cimg-url-input" placeholder="https://..." style="font-size:12px" oninput="setContentImgUrl(this.value)"/>
+      </div>
+      <div id="cimg-preview" style="display:none">
+        <img id="cimg-preview-img" style="max-width:100%;max-height:120px;border-radius:6px;border:1px solid var(--border)"/>
+        <p style="font-size:11px;color:var(--green);margin-top:4px">✓ Imagen lista para incluir en el correo</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-ttl">Estudiantes a notificar</div>
+    <div class="st-hdr" id="st-hdr"></div>
+    <div id="st-list"></div>
+    <button class="add-lnk" onclick="addSt()">+ Agregar estudiante</button>
+    <div class="paste-sep">
+      <!-- Carga Excel -->
+      <div style="margin-bottom:14px">
+        <p style="font-size:12px;color:var(--muted);margin-bottom:8px;font-weight:500">Cargar desde Excel (.xlsx)</p>
+        <div id="excel-drop" onclick="document.getElementById('excel-input').click()"
+          style="border:2px dashed var(--border2);border-radius:8px;padding:18px;text-align:center;cursor:pointer;transition:border-color .18s"
+          ondragover="event.preventDefault();this.style.borderColor='var(--purple)'"
+          ondragleave="this.style.borderColor='var(--border2)'"
+          ondrop="handleDrop(event)">
+          <p style="font-size:13px;color:var(--muted)">Arrastra tu archivo Excel aquí o <span style="color:var(--purple);font-weight:500">haz clic para seleccionar</span></p>
+          <p style="font-size:11px;color:var(--hint);margin-top:4px">Formato: columnas Nombre · Correo · Programa (· campo extra opcional) · una hoja por programa</p>
+        </div>
+        <input type="file" id="excel-input" accept=".xlsx,.xls" style="display:none" onchange="loadExcel(this.files[0])"/>
+        <!-- Selector de hojas -->
+        <div id="sheet-selector" style="display:none;margin-top:10px">
+          <p style="font-size:12px;color:var(--muted);margin-bottom:6px">Hojas encontradas — selecciona las que quieres cargar:</p>
+          <div id="sheet-list" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px"></div>
+          <div class="brow">
+            <button class="btn btn-p btn-sm" onclick="importarHojas()">Cargar hojas seleccionadas</button>
+            <button class="btn btn-g btn-sm" onclick="selAllSheets()">Seleccionar todas</button>
+            <span id="excel-msg" style="font-size:12px;color:var(--muted)"></span>
+          </div>
+        </div>
+      </div>
+      <!-- Pegar desde Sheets -->
+      <p style="font-size:12px;color:var(--muted);margin-bottom:7px">O pega directamente desde Google Sheets (Nombre · Correo · Programa · campo extra si aplica)</p>
+      <textarea id="paste" class="mono" rows="3" placeholder="María Torres&#9;maria@email.com&#9;Marketing Digital&#10;Juan Pérez&#9;juan@email.com&#9;Ventas"></textarea>
+      <button class="btn btn-g btn-sm" style="margin-top:7px" onclick="importar()">Importar datos pegados</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <span class="card-ttl" style="margin:0">Vista previa HTML</span>
+      <span class="chip"><span class="dot"></span>Claude</span>
+    </div>
+    <div class="brow" style="margin-bottom:12px">
+      <button class="btn btn-g btn-sm" onclick="preview()">Generar vista previa</button>
+      <span id="prev-st" style="font-size:12px;color:var(--muted)"></span>
+    </div>
+    <div class="prev-lbl">Asunto</div>
+    <div id="prev-subj" class="prev-box prev-subj empty" style="margin-bottom:10px">El asunto aparecerá aquí...</div>
+    <div class="prev-lbl">Correo renderizado</div>
+    <div id="prev-html" class="prev-box prev-html empty">El correo HTML aparecerá aquí...</div>
+    <p style="font-size:11px;color:var(--hint);margin-top:7px">Vista previa del primer estudiante con su banner según programa y tipo.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-ttl">Envío</div>
+    <div class="from-row" style="margin-bottom:14px">
+      <div class="from-info">
+        <p>Desde: <span>support@mdt.edu.pe</span></p>
+        <small id="send-method-info">Agrega estudiantes para ver el método de envío</small>
+      </div>
+    </div>
+    <!-- Selector de servicio -->
+    <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center">
+      <span style="font-size:12px;color:var(--muted);font-weight:500">Servicio:</span>
+      <button class="btn btn-sm" id="svc-auto" onclick="setService('auto')" style="background:var(--purple);color:#fff;border:none">Auto</button>
+      <button class="btn btn-g btn-sm" id="svc-zoho" onclick="setService('zoho')">Zoho Mail</button>
+      <button class="btn btn-g btn-sm" id="svc-sp" onclick="setService('sendpulse')">SendPulse</button>
+      <span id="svc-info" style="font-size:11px;color:var(--muted)">Auto: usa Zoho ≤20, SendPulse >20</span>
+    </div>
+    <!-- Botones de acción -->
+    <div class="brow">
+      <button class="btn btn-p" id="send-btn" onclick="enviar()">Enviar ahora</button>
+      <button class="btn btn-g" onclick="abrirProgramar()">🕐 Programar envío</button>
+    </div>
+    <div id="send-st"></div>
+    <div id="send-log" class="log"></div>
+  </div>
+
+  <!-- Modal programar envío -->
+  <div id="schedule-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:998;align-items:center;justify-content:center">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;max-width:460px;width:90%">
+      <h3 style="font-size:15px;font-weight:500;margin-bottom:16px">🕐 Programar envío</h3>
+      <div class="g2f">
+        <div><label>Fecha de envío</label><input type="date" id="sch-fecha"/></div>
+        <div><label>Hora de envío (Lima)</label><input type="time" id="sch-hora" value="09:00"/></div>
+      </div>
+      <div class="f1">
+        <label>Servicio</label>
+        <select id="sch-service">
+          <option value="auto">Auto (≤20 Zoho, >20 SendPulse)</option>
+          <option value="zoho">Zoho Mail</option>
+          <option value="sendpulse">SendPulse</option>
+        </select>
+      </div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:16px;font-size:12px;color:var(--muted)">
+        <strong style="color:var(--text)">Resumen:</strong><br/>
+        <span id="sch-resumen">Cargando...</span>
+      </div>
+      <div class="brow">
+        <button class="btn btn-p btn-sm" onclick="guardarProgramacion()">Programar</button>
+        <button class="btn btn-g btn-sm" onclick="cerrarProgramar()">Cancelar</button>
+        <span id="sch-msg" style="font-size:12px;color:var(--muted)"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB WhatsApp -->
+<div id="tab-whatsapp" class="sec">
+
+  <!-- Configuración -->
+  <div class="card" id="wa-config-card">
+    <div class="card-ttl">⚙ Configuración WhatsApp Business API</div>
+    <div class="g2f">
+      <div><label>Phone Number ID</label><input id="wa-phone-id" class="mono" placeholder="1033638096499680" value="1033638096499680"/></div>
+      <div><label>WhatsApp Business Account ID</label><input id="wa-waba-id" class="mono" placeholder="1233747678473933" value="1233747678473933"/></div>
+    </div>
+    <div><label>Access Token</label><input id="wa-token" class="mono" type="password" placeholder="EAANka..."/></div>
+    <div class="brow" style="margin-top:10px">
+      <button class="btn btn-p btn-sm" onclick="guardarWA()">Guardar credenciales WA</button>
+      <span id="wa-cfg-msg" style="font-size:12px;color:var(--muted)"></span>
+    </div>
+  </div>
+
+  <!-- Envío individual -->
+  <div class="card">
+    <div class="card-ttl">Enviar mensaje WhatsApp</div>
+    <div class="g2f">
+      <div><label>Nombre</label><input id="wa-nombre" placeholder="Ana Ramírez"/></div>
+      <div><label>Número (con código país)</label><input id="wa-numero" placeholder="51987654321" class="mono"/></div>
+    </div>
+    <div><label>Mensaje</label><textarea id="wa-mensaje" rows="4" placeholder="Hola {nombre}, te recordamos que la Masterclass de HackaCYBER es mañana viernes 28 a las 7:00 PM (hora Lima). ¡Te esperamos!"></textarea></div>
+    <div class="brow" style="margin-top:10px">
+      <button class="btn btn-p btn-sm" onclick="enviarWAIndividual()">Enviar WhatsApp</button>
+      <button class="btn btn-g btn-sm" onclick="generarMsgWA()">✨ Claude redacta</button>
+      <span id="wa-send-msg" style="font-size:12px;color:var(--muted)"></span>
+    </div>
+  </div>
+
+  <!-- Envío masivo desde lista -->
+  <div class="card">
+    <div class="card-ttl">Envío masivo WhatsApp</div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:14px">Usa la lista de estudiantes cargada en la pestaña "Nuevo envío". Claude personalizará cada mensaje.</p>
+    <div class="g2f">
+      <div>
+        <label>Tipo de mensaje</label>
+        <select id="wa-tipo">
+          <option value="confirmacion">Confirmación de asistencia</option>
+          <option value="recordatorio">Recordatorio del evento</option>
+          <option value="seguimiento">Seguimiento de tareas</option>
+          <option value="bienvenida">Bienvenida al programa</option>
+        </select>
+      </div>
+      <div><label>Evento / Contexto</label><input id="wa-evento" placeholder="Masterclass HackaCYBER — viernes 28, 7PM Lima"/></div>
+    </div>
+    <div id="wa-students-count" style="font-size:12px;color:var(--muted);margin-bottom:10px">Carga estudiantes en la pestaña "Nuevo envío" primero.</div>
+    <div class="brow">
+      <button class="btn btn-p" onclick="enviarWAMasivo()">Enviar WhatsApp a todos</button>
+      <span id="wa-masivo-msg" style="font-size:12px;color:var(--muted)"></span>
+    </div>
+    <div id="wa-log" class="log" style="margin-top:10px"></div>
+  </div>
+
+</div>
+
+<!-- TAB Banners -->
+<div id="tab-banners" class="sec">
+
+  <!-- Subir nuevo banner -->
+  <div class="card">
+    <div class="card-ttl">Subir banner</div>
+    <div class="g2f">
+      <div>
+        <label>Nombre del banner</label>
+        <input id="banner-name" placeholder="Ej: hackacyber_masterclass.png"/>
+      </div>
+      <div>
+        <label>Programa asociado (opcional)</label>
+        <select id="banner-prog-sel"></select>
+      </div>
+    </div>
+    <!-- Upload desde archivo -->
+    <div id="banner-drop" onclick="document.getElementById('banner-file-input').click()"
+      style="border:2px dashed var(--border2);border-radius:8px;padding:16px;text-align:center;cursor:pointer;margin-bottom:10px;transition:border-color .18s"
+      ondragover="event.preventDefault();this.style.borderColor='var(--purple)'"
+      ondragleave="this.style.borderColor='var(--border2)'"
+      ondrop="handleBannerDrop(event)">
+      <p style="font-size:13px;color:var(--muted)">Arrastra una imagen o <span style="color:var(--purple);font-weight:500">haz clic para seleccionar</span></p>
+      <p style="font-size:11px;color:var(--hint);margin-top:3px">PNG, JPG, GIF, WebP — máx 5MB</p>
+    </div>
+    <input type="file" id="banner-file-input" accept="image/*" style="display:none" onchange="handleBannerFile(this.files[0])"/>
+    <div id="banner-preview-wrap" style="display:none;margin-bottom:10px">
+      <img id="banner-preview-img" style="max-width:100%;max-height:120px;border-radius:6px;border:1px solid var(--border)"/>
+    </div>
+    <!-- O por URL -->
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+      <div style="flex:1;height:1px;background:var(--border)"></div>
+      <span style="font-size:11px;color:var(--hint)">o pega una URL</span>
+      <div style="flex:1;height:1px;background:var(--border)"></div>
+    </div>
+    <div class="g2f">
+      <div class="span2" style="grid-column:1/-1">
+        <label>URL externa (Google Drive, web, etc.)</label>
+        <input id="banner-url-input" placeholder="https://..." oninput="previewBannerUrl(this.value)"/>
+      </div>
+    </div>
+    <div class="brow" style="margin-top:8px">
+      <button class="btn btn-p btn-sm" onclick="subirBanner()">Guardar banner</button>
+      <span id="banner-upload-msg" style="font-size:12px;color:var(--muted)"></span>
+    </div>
+  </div>
+
+  <!-- Banners guardados -->
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <span class="card-ttl" style="margin:0">Banners guardados</span>
+      <button class="btn btn-g btn-sm" onclick="cargarBanners()">Actualizar lista</button>
+    </div>
+    <div id="banners-saved-list">
+      <p style="font-size:12px;color:var(--hint);font-style:italic">Cargando...</p>
+    </div>
+  </div>
+
+  <!-- Asignación por programa y tipo -->
+  <div class="card">
+    <div class="card-ttl">Asignar banners por programa y tipo</div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:16px">Cada programa puede tener un banner diferente por tipo de correo.</p>
+    <div id="banners-assignment-list"></div>
+    <div class="new-prog-row">
+      <input id="new-prog-input" placeholder="Nombre del nuevo programa..." onkeydown="if(event.key==='Enter')addProgram()"/>
+      <button class="btn btn-g btn-sm" onclick="addProgram()">+ Agregar programa</button>
+    </div>
+  </div>
+</div>
+
+<!-- TAB Programados -->
+<div id="tab-programados" class="sec">
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <span class="card-ttl" style="margin:0">Envíos programados</span>
+      <button class="btn btn-g btn-sm" onclick="cargarProgramados()">Actualizar</button>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:16px">Los envíos pendientes se ejecutan automáticamente cuando llega la fecha y hora, aunque hayas cerrado y vuelto a abrir el servidor.</p>
+    <div id="programados-list"><p style="font-size:12px;color:var(--hint);font-style:italic">Cargando...</p></div>
+  </div>
+</div>
+
+<!-- TAB Historial -->
+<div id="tab-historial" class="sec">
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <span class="card-ttl" style="margin:0">Historial de correos</span>
+      <div class="brow">
+        <button class="btn btn-g btn-sm" onclick="filtrarHist('all')" id="filt-all" style="border-color:var(--purple);color:var(--purple)">Todos</button>
+        <button class="btn btn-g btn-sm" onclick="filtrarHist('ok')" id="filt-ok">Enviados</button>
+        <button class="btn btn-g btn-sm" onclick="filtrarHist('err')" id="filt-err">Con error</button>
+        <button class="btn btn-g btn-sm" onclick="limpiarHist()" style="color:var(--red)">Limpiar</button>
+      </div>
+    </div>
+    <div id="hist"></div>
+  </div>
+</div>
+
+<!-- Modal reenvío -->
+<div id="resend-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:999;align-items:center;justify-content:center">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;max-width:440px;width:90%;max-height:80vh;overflow-y:auto">
+    <h3 style="font-size:15px;font-weight:500;margin-bottom:4px">Reenviar correo</h3>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:16px" id="resend-to"></p>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px">
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px" id="resend-opt-exact">
+        <input type="radio" name="resend-type" value="exact" checked style="width:auto;accent-color:var(--purple)"/>
+        <div>
+          <p style="font-size:13px;font-weight:500">Reenviar exactamente igual</p>
+          <p style="font-size:11px;color:var(--muted)">Mismo asunto y cuerpo que el original</p>
+        </div>
+      </label>
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px" id="resend-opt-new">
+        <input type="radio" name="resend-type" value="new" style="width:auto;accent-color:var(--purple)"/>
+        <div>
+          <p style="font-size:13px;font-weight:500">Reenviar con datos actuales</p>
+          <p style="font-size:11px;color:var(--muted)">Claude redacta nuevo correo con el formulario actual</p>
+        </div>
+      </label>
+    </div>
+    <div class="brow">
+      <button class="btn btn-p btn-sm" onclick="confirmarReenvio()">Reenviar</button>
+      <button class="btn btn-g btn-sm" onclick="cerrarResend()">Cancelar</button>
+      <span id="resend-msg" style="font-size:12px;color:var(--muted)"></span>
+    </div>
+  </div>
+</div>
+
+</div>
+<script>
+const BASE=window.location.origin;
+const TIPO_KEYS=['masterclass','bienvenida','tarea','seguimiento','certificado','pago'];
+const TIPO_LABELS={masterclass:'Masterclass',bienvenida:'Bienvenida',tarea:'Tarea',seguimiento:'Seguimiento',certificado:'Certificado',pago:'Pago'};
+const DEFAULT_PROGS=['HackaCYBER SED Bogotá','PGDSI','CiberPolicia','CyberGames','Noticias_ASC','PSDIA'];
+
+let students=[],historial=[],token=null,accountId=null,apiKey=null,currentType='masterclass';
+let credsStatus={zoho:false,sendpulse:false,anthropic:false};
+let contentImageUrl='';
+let contentImageB64='';
+let programs=[...DEFAULT_PROGS];
+let banners={};// {programa: {tipo: url}}
+
+const TIPOS={
+  masterclass:{label:'Masterclass',title:'Datos de la Masterclass',cols:['Nombre','Correo','Programa'],
+    fields:`<div class="g2f"><div><label>Nombre de la Masterclass</label><input id="f-nom" value="Masterclass de Ciberseguridad"/></div><div><label>Programa</label><select id="f-prog-sel" onchange="document.getElementById('f-prog').value=this.value"></select></div></div>
+    <input type="hidden" id="f-prog"/>
+    <div class="g2f"><div><label>Fecha</label><input id="f-fecha" type="date"/></div><div><label>Hora</label><input id="f-hora" type="time" value="19:00"/></div></div>
+    <div class="f1"><label>Link de acceso (opcional)</label><input id="f-link" placeholder="https://zoom.us/j/..."/></div>
+    <div class="f1"><label>Instrucciones para Claude</label><textarea id="f-inst" rows="2" placeholder="Ej: Recordar conectarse 5 min antes."></textarea></div>`,
+    prompt(st,f){return`Correo HTML de confirmación de asistencia a Masterclass.\nEstudiante: ${st.n} | Programa: ${st.p||f.prog} | Masterclass: ${f.nom}\nFecha: ${fmt(f.fecha)} | Hora: ${f.hora} Lima ${f.link?'| Link: '+f.link:''} ${f.inst?'| Notas: '+f.inst:''}`}},
+  bienvenida:{label:'Bienvenida',title:'Datos del nuevo estudiante',cols:['Nombre','Correo','Programa'],
+    fields:`<div class="g2f"><div><label>Programa</label><select id="f-prog-sel" onchange="document.getElementById('f-prog').value=this.value"></select></div><div><label>Fecha de inicio</label><input id="f-fecha" type="date"/></div></div>
+    <input type="hidden" id="f-prog"/>
+    <div class="f1"><label>Campus virtual (opcional)</label><input id="f-link" placeholder="https://campus.mdt.edu.pe"/></div>
+    <div class="f1"><label>Mensaje especial</label><textarea id="f-inst" rows="2" placeholder="Ej: El primer módulo es de acceso libre."></textarea></div>`,
+    prompt(st,f){return`Correo HTML de bienvenida cálido y motivador.\nEstudiante: ${st.n} | Programa: ${st.p||f.prog} | Inicio: ${fmt(f.fecha)} ${f.link?'| Campus: '+f.link:''} ${f.inst?'| Notas: '+f.inst:''}`}},
+  tarea:{label:'Tarea',title:'Datos de la tarea o entrega',cols:['Nombre','Correo','Programa'],
+    fields:`<div class="g2f"><div><label>Nombre de la tarea</label><input id="f-nom" placeholder="Tarea 3: Análisis de vulnerabilidades"/></div><div><label>Módulo</label><select id="f-prog-sel" onchange="document.getElementById('f-prog').value=this.value"></select></div></div>
+    <input type="hidden" id="f-prog"/>
+    <div class="g2f"><div><label>Fecha límite</label><input id="f-fecha" type="date"/></div><div><label>Hora límite</label><input id="f-hora" type="time" value="23:59"/></div></div>
+    <div class="f1"><label>Link de entrega (opcional)</label><input id="f-link" placeholder="https://campus.mdt.edu.pe/entrega"/></div>
+    <div class="f1"><label>Instrucciones adicionales</label><textarea id="f-inst" rows="2" placeholder="Ej: Adjuntar en PDF."></textarea></div>`,
+    prompt(st,f){return`Correo HTML recordatorio de entrega de tarea.\nEstudiante: ${st.n} | Programa: ${st.p||f.prog} | Tarea: ${f.nom}\nFecha límite: ${fmt(f.fecha)} ${f.hora?'a las '+f.hora:''} ${f.link?'| Link: '+f.link:''} ${f.inst?'| Notas: '+f.inst:''}`}},
+  seguimiento:{label:'Seguimiento',title:'Datos del seguimiento',cols:['Nombre','Correo','Programa','Progreso (%)'],
+    fields:`<div class="g2f"><div><label>Programa</label><select id="f-prog-sel" onchange="document.getElementById('f-prog').value=this.value"></select></div><div><label>Módulo actual</label><input id="f-nom" placeholder="Módulo 3"/></div></div>
+    <input type="hidden" id="f-prog"/>
+    <div class="g2f"><div><label>Semanas activo</label><input id="f-semanas" type="number" placeholder="4" min="1"/></div><div><label>Situación</label><select id="f-situacion"><option value="va bien">Va bien, reforzar motivación</option><option value="inactivo">Inactivo, necesita reactivación</option><option value="atrasado">Atrasado en módulos</option><option value="destacado">Destacado, felicitarlo</option></select></div></div>
+    <div class="f1"><label>Notas</label><textarea id="f-inst" rows="2" placeholder="Ej: No completó ejercicios del módulo 2."></textarea></div>`,
+    prompt(st,f){return`Correo HTML de seguimiento y monitoreo de progreso.\nEstudiante: ${st.n} | Programa: ${st.p||f.prog} | Módulo: ${f.nom}\nSemanas: ${f.semanas||'?'} | Progreso: ${st.extra||'no especificado'}% | Situación: ${f.situacion} ${f.inst?'| Notas: '+f.inst:''}`}},
+  certificado:{label:'Certificado',title:'Datos del certificado',cols:['Nombre','Correo','Programa'],
+    fields:`<div class="g2f"><div><label>Módulo o programa completado</label><input id="f-nom" placeholder="Módulo 4 — Ethical Hacking"/></div><div><label>Programa</label><select id="f-prog-sel" onchange="document.getElementById('f-prog').value=this.value"></select></div></div>
+    <input type="hidden" id="f-prog"/>
+    <div class="g2f"><div><label>Fecha de logro</label><input id="f-fecha" type="date"/></div><div><label>Link al certificado (opcional)</label><input id="f-link" placeholder="https://..."/></div></div>
+    <div class="f1"><label>Mensaje especial</label><textarea id="f-inst" rows="2" placeholder="Ej: Ya puede acceder al módulo 5."></textarea></div>`,
+    prompt(st,f){return`Correo HTML de felicitación por completar módulo, muy emotivo.\nEstudiante: ${st.n} | Programa: ${st.p||f.prog} | Logro: ${f.nom} | Fecha: ${fmt(f.fecha)} ${f.link?'| Certificado: '+f.link:''} ${f.inst?'| Notas: '+f.inst:''}`}},
+  pago:{label:'Pago',title:'Datos del recordatorio de pago',cols:['Nombre','Correo','Programa','Monto (S/)'],
+    fields:`<div class="g2f"><div><label>Programa</label><select id="f-prog-sel" onchange="document.getElementById('f-prog').value=this.value"></select></div><div><label>Tipo de cobro</label><select id="f-tipo"><option value="cuota mensual">Cuota mensual</option><option value="renovación anual">Renovación anual</option><option value="pago pendiente">Pago pendiente</option><option value="primera cuota">Primera cuota</option></select></div></div>
+    <input type="hidden" id="f-prog"/>
+    <div class="g2f"><div><label>Fecha límite de pago</label><input id="f-fecha" type="date"/></div><div><label>Método / link de pago</label><input id="f-link" placeholder="Yape, transferencia, link..."/></div></div>
+    <div class="f1"><label>Notas adicionales</label><textarea id="f-inst" rows="2" placeholder="Ej: Pueden pagar en cuotas."></textarea></div>`,
+    prompt(st,f){return`Correo HTML recordatorio de pago, amable y profesional.\nEstudiante: ${st.n} | Programa: ${st.p||f.prog} | Tipo: ${f.tipo} | Monto: S/ ${st.extra||'por confirmar'}\nFecha límite: ${fmt(f.fecha)} ${f.link?'| Forma de pago: '+f.link:''} ${f.inst?'| Notas: '+f.inst:''}`}},
+};
+
+function fmt(v){if(!v)return'fecha por confirmar';const d=new Date(v+'T12:00:00');return d.toLocaleDateString('es-PE',{weekday:'long',day:'numeric',month:'long',year:'numeric'});}
+
+function getF(){
+  const g=id=>{const e=document.getElementById(id);return e?e.value||'':''};
+  // Sincronizar select con hidden input
+  const sel=document.getElementById('f-prog-sel');
+  const hid=document.getElementById('f-prog');
+  if(sel&&hid&&!hid.value) hid.value=sel.value;
+  return{nom:g('f-nom'),prog:g('f-prog')||g('f-prog-sel'),fecha:g('f-fecha'),hora:g('f-hora'),
+    link:g('f-link'),inst:g('f-inst'),semanas:g('f-semanas'),situacion:g('f-situacion'),tipo:g('f-tipo')};
+}
+
+function getBannerUrl(programa,tipo){
+  const key=(programa||'').trim();
+  return banners[key]?.[tipo]||'';
+}
+
+function buildHTML(studentName, bodyText, bannerUrl, programa, extraData){
+  extraData = extraData || {};
+  // Banner
+  const bannerSection = bannerUrl
+    ? `<tr><td style="border-radius:12px 12px 0 0;overflow:hidden;"><img src="${bannerUrl}" alt="${programa}" style="width:100%;max-width:600px;height:200px;object-fit:cover;display:block;"/></td></tr>`
+    : `<tr><td style="background:#0a1628;padding:32px 36px;border-radius:12px 12px 0 0;border-bottom:4px solid #f5a623;"><img src=\\"https://merlin-global.com/assets/merlin-logo-BbzWVHUY.png\\" alt=\\"Merlin\\" style=\\"height:50px\\"><p style=\"margin:0;font-size:13px;font-weight:700;color:#f5a623;text-transform:uppercase;letter-spacing:2.5px;\">${programa||'MDT'}</p></td></tr>`;
+
+  // Contenido de texto
+  const lines = bodyText.split('\n').filter(l=>l.trim()).map(l=>`<p style="margin:0 0 14px;color:#333;font-size:15px;line-height:1.75;">${l}</p>`).join('');
+
+  
+  // Imagen de contenido del correo
+  const contentImg = (extraData && extraData.contentImg) ? extraData.contentImg : '';
+  const contentImgHtml = contentImg
+    ? '<tr><td style="background:#ffffff;padding:4px 36px 20px;"><img src="' + contentImg + '" alt="Programa" style="width:100%;max-width:528px;height:auto;border-radius:8px;display:block;"/></td></tr>'
+    : '';
+
+  // Info del evento
+  let infoRows = '';
+  if(extraData.fecha) infoRows += `<tr><td style="padding:6px 0;width:28px;font-size:18px;">📅</td><td style="padding:6px 0;"><span style="font-size:11px;font-weight:600;color:#8aa8cc;text-transform:uppercase;letter-spacing:1px;">Fecha</span><br/><span style="font-size:14px;color:#1a2a4a;font-weight:500;">${extraData.fecha}</span></td></tr>`;
+  if(extraData.hora) infoRows += `<tr><td style="padding:6px 0;font-size:18px;">🕐</td><td style="padding:6px 0;"><span style="font-size:11px;font-weight:600;color:#8aa8cc;text-transform:uppercase;letter-spacing:1px;">Hora</span><br/><span style="font-size:14px;color:#1a2a4a;font-weight:500;">${extraData.hora} (Lima, Perú)</span></td></tr>`;
+  if(extraData.programa||programa) infoRows += `<tr><td style="padding:6px 0;font-size:18px;">🎓</td><td style="padding:6px 0;"><span style="font-size:11px;font-weight:600;color:#8aa8cc;text-transform:uppercase;letter-spacing:1px;">Programa</span><br/><span style="font-size:14px;color:#1a2a4a;font-weight:500;">${extraData.programa||programa}</span></td></tr>`;
+  const infoSection = infoRows ? `<tr><td style="background:#f8faff;padding:20px 36px;"><table width="100%" cellpadding="0" cellspacing="0">${infoRows}</table></td></tr>` : '';
+
+  // Botones
+  const btnPrimary = extraData.linkEvento
+    ? `<a href="${extraData.linkEvento}" style="display:inline-block;background:#2d6ab4;color:#ffffff;text-decoration:none;padding:13px 28px;border-radius:8px;font-size:14px;font-weight:600;letter-spacing:0.3px;">${extraData.btnTexto||'Acceder al evento'}</a>`
+    : '';
+  const btnPlataforma = `<a href="https://www.netacad.com/" style="display:inline-block;background:#ffffff;color:#2d6ab4;text-decoration:none;padding:12px 20px;border-radius:8px;font-size:13px;font-weight:600;border:2px solid #2d6ab4;">📚 Plataforma de estudios</a>`;
+  const btnWA = `<a href="https://wa.me/message/JTILTFDA7QGHK1" style="display:inline-block;background:#25d366;color:#ffffff;text-decoration:none;padding:13px 20px;border-radius:8px;font-size:13px;font-weight:600;">💬 WhatsApp Soporte</a>`;
+
+  const botonesSection = `<tr><td style="background:#ffffff;padding:8px 36px 28px;">
+    <table cellpadding="0" cellspacing="8"><tr>
+      ${btnPrimary?`<td style="padding-right:8px;">${btnPrimary}</td>`:''}
+      <td style="padding-right:8px;">${btnWA}</td>
+      <td>${btnPlataforma}</td>
+    </tr></table>
+  </td></tr>`;
+
+  return `<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/></head>
+<body style="margin:0;padding:0;background:#f0f4f8;font-family:'Helvetica Neue',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f4f8;padding:24px 0;">
+<tr><td align="center">
+<table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.10);">
+  ${bannerSection}
+  <tr><td style="background:#ffffff;padding:32px 36px 8px;">
+    <p style="margin:0 0 6px;font-size:11px;font-weight:700;color:#f5a623;text-transform:uppercase;letter-spacing:2px;">${programa||'MDT'}</p>
+    ${lines}
+  </td></tr>
+  ${contentImgHtml}
+  ${botonesSection}
+  ${infoSection}
+  <tr><td style="background:#ffffff;padding:0 36px 8px;"><div style="height:1px;background:linear-gradient(90deg,#e8f0fe,#2d6ab4,#e8f0fe);"></div></td></tr>
+  <tr><td style="background:#1a2a4a;padding:24px 36px;border-radius:0 0 12px 12px;">
+    <table width="100%" cellpadding="0" cellspacing="0">
+    <tr><td style="padding-bottom:14px;">
+      <p style="margin:0 0 4px;font-size:22px;font-weight:700;color:#ffffff;letter-spacing:-1px;">merlin<span style=\"color:#f5a623;\">.</span></p><p style="margin:0;font-size:10px;color:#8aa8cc;letter-spacing:1px;">IMPACTO SOCIAL A TRAVÉS DEL TALENTO DIGITAL</p>
+    </td></tr>
+    <tr><td style="padding-bottom:14px;">
+      <table cellpadding="0" cellspacing="0"><tr>
+        <td style="padding-right:8px;"><a href="https://www.facebook.com/MerlinAcademy.IA.MDT/" style="display:inline-block;background:#3b5998;color:#fff;text-decoration:none;padding:5px 11px;border-radius:5px;font-size:11px;font-weight:600;">f Facebook</a></td>
+        <td style="padding-right:8px;"><a href="https://linkedin.com/company/merlindata" style="display:inline-block;background:#0077b5;color:#fff;text-decoration:none;padding:5px 11px;border-radius:5px;font-size:11px;font-weight:600;">in LinkedIn</a></td>
+        <td style="padding-right:8px;"><a href="https://www.instagram.com/merlin_data" style="display:inline-block;background:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);color:#fff;text-decoration:none;padding:5px 11px;border-radius:5px;font-size:11px;font-weight:600;">📷 Instagram</a></td>
+        <td style="padding-right:8px;"><a href="https://www.youtube.com/@merlindatatechnology9338" style="display:inline-block;background:#ff0000;color:#fff;text-decoration:none;padding:5px 11px;border-radius:5px;font-size:11px;font-weight:600;">▶ YouTube</a></td>
+        <td><a href="https://merlin-global.com/" style="display:inline-block;background:#f5a623;color:#1a2a4a;text-decoration:none;padding:5px 11px;border-radius:5px;font-size:11px;font-weight:600;">🌐 merlin-global.com</a></td>
+      </tr></table>
+    </td></tr>
+    <tr><td>
+      <p style="margin:0;font-size:11px;color:#8aa8cc;line-height:1.8;">
+        📧 <a href="mailto:support@mdt.edu.pe" style="color:#f5a623;text-decoration:none;">support@mdt.edu.pe</a> &nbsp;·&nbsp;
+        💬 <a href="https://wa.me/message/JTILTFDA7QGHK1" style="color:#f5a623;text-decoration:none;">WhatsApp Soporte</a><br/>
+        <span style="color:#4a6a8a;">Correo generado automáticamente · No responder directamente.</span>
+      </p>
+    </td></tr>
+    </table>
+  </td></tr>
+</table>
+</td></tr>
+</table>
+</body></html>`;
+}
+
+// ── Banners tab ──
+function renderBanners(){
+  const el=document.getElementById('banners-list');
+  if(!el)return;
+  el.innerHTML=programs.map((prog,i)=>{
+    const rows=TIPO_KEYS.map(tipo=>`
+      <div class="banner-item">
+        <label>${TIPO_LABELS[tipo]}</label>
+        <input type="text" placeholder="https://..." value="${(banners[prog]?.[tipo])||''}"
+          oninput="setBanner('${prog.replace(/'/g,"\\'")}','${tipo}',this.value)" onblur="previewBannerImg(this)"/>
+        <img class="banner-preview" id="bp-${i}-${tipo}" src="" alt="preview"/>
+      </div>`).join('');
+    return`<div class="prog-card">
+      <div class="prog-header" onclick="toggleProg(${i})">
+        <span class="prog-name">${prog}</span>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:11px;color:var(--muted)">${Object.keys(banners[prog]||{}).filter(k=>banners[prog][k]).length} banner(s) configurado(s)</span>
+          <span class="chevron" id="chev-${i}">▼</span>
+          <button class="btn btn-red btn-sm" onclick="event.stopPropagation();removeProg(${i})" style="padding:3px 8px;font-size:11px">Eliminar</button>
+        </div>
+      </div>
+      <div class="prog-body" id="prog-body-${i}">
+        <div class="banner-grid">${rows}</div>
+        <p style="font-size:11px;color:var(--hint);margin-top:8px">Tip: sube la imagen a Google Drive, haz clic derecho → "Obtener enlace" → "Cualquier persona con el enlace" → copia la URL directa.</p>
+      </div>
+    </div>`;
+  }).join('');
+  // Mostrar previews existentes
+  programs.forEach((prog,i)=>{
+    TIPO_KEYS.forEach(tipo=>{
+      const url=(banners[prog]?.[tipo])||'';
+      if(url){
+        const img=document.getElementById(`bp-${i}-${tipo}`);
+        if(img){img.src=url;img.style.display='block';}
+      }
+    });
+  });
+}
+
+function toggleProg(i){
+  const body=document.getElementById(`prog-body-${i}`);
+  const chev=document.getElementById(`chev-${i}`);
+  body.classList.toggle('open');chev.classList.toggle('open');
+}
+
+function setBanner(prog,tipo,url){
+  if(!banners[prog])banners[prog]={};
+  banners[prog][tipo]=url;
+  saveBanners();
+  renderBanners();
+}
+
+function previewBannerImg(input){
+  const url=input.value.trim();
+  const img=input.nextElementSibling;
+  if(img&&img.tagName==='IMG'){if(url){img.src=url;img.style.display='block';}else{img.style.display='none';}}
+}
+
+function addProgram(){
+  const inp=document.getElementById('new-prog-input');
+  const name=inp.value.trim();
+  if(!name)return;
+  if(!programs.includes(name)){programs.push(name);savePrograms();renderBanners();}
+  inp.value='';
+}
+
+function removeProg(i){
+  if(!confirm(`¿Eliminar el programa "${programs[i]}"?`))return;
+  delete banners[programs[i]];
+  programs.splice(i,1);
+  savePrograms();saveBanners();renderBanners();
+  fillProgSelects();
+}
+
+function fillProgSelects(){
+  document.querySelectorAll('#f-prog-sel').forEach(sel=>{
+    const cur=sel.value;
+    sel.innerHTML=programs.map(p=>`<option value="${p}"${p===cur?' selected':''}>${p}</option>`).join('');
+    const hid=document.getElementById('f-prog');
+    if(hid&&!hid.value) hid.value=sel.value;
+  });
+}
+
+// ── Tipo selector ──
+function selType(t){
+  currentType=t;
+  document.querySelectorAll('.tc').forEach(c=>c.classList.remove('on'));
+  document.getElementById('tc-'+t).classList.add('on');
+  const cfg=TIPOS[t];
+  document.getElementById('fields-title').textContent=cfg.title;
+  document.getElementById('dyn-fields').innerHTML=cfg.fields;
+  fillProgSelects();
+  const fd=document.getElementById('f-fecha');if(fd&&!fd.value)fd.value=new Date().toISOString().split('T')[0];
+  const hasX=cfg.cols.length>3;
+  const gc=hasX?'1fr 1.3fr 1fr 0.7fr 26px':'1fr 1.3fr 1fr 26px';
+  const hdr=document.getElementById('st-hdr');hdr.style.gridTemplateColumns=gc;
+  hdr.innerHTML=cfg.cols.map(c=>`<span>${c}</span>`).join('')+'<span></span>';
+  renderSt();
+  document.getElementById('prev-subj').className='prev-box prev-subj empty';document.getElementById('prev-subj').textContent='El asunto aparecerá aquí...';
+  const ph=document.getElementById('prev-html');ph.className='prev-box prev-html empty';ph.textContent='El correo HTML aparecerá aquí...';
+  updateMethodInfo();
+}
+
+function updateMethodInfo(){
+  const count=students.filter(s=>s.n&&s.e).length;
+  const spId=credsStatus.sendpulse||localStorage.getItem('mdt_spid')||'';
+  const el=document.getElementById('send-method-info');if(!el)return;
+  if(count===0){el.textContent='Agrega estudiantes para ver el método de envío';return;}
+  if(count>20&&spId){el.innerHTML=`${count} estudiantes → <strong style="color:var(--green)">SendPulse</strong> (envío masivo)`;}
+  else{el.innerHTML=`${count} estudiante(s) → <strong style="color:var(--amber)">Zoho Mail</strong>`;}
+}
+
+// ── Persistencia ──
+function savePrograms(){localStorage.setItem('mdt_programs',JSON.stringify(programs));}
+function saveBanners(){localStorage.setItem('mdt_banners',JSON.stringify(banners));}
+async function checkCreds(){
+  try{
+    const token = sessionStorage.getItem('mdt_session')||'';
+    const r = await fetch('/api/creds-status',{
+      headers:{'X-Session-Token':token}
+    });
+    const d = await r.json();
+    const zohoEl  = document.getElementById('zoho-setup');
+    const spEl    = document.getElementById('sp-setup');
+    const aiEl    = document.getElementById('ai-setup');
+    const wrapper = document.getElementById('setup-wrapper');
+    if(zohoEl)  zohoEl.style.display  = d.zoho      ? 'none' : 'block';
+    if(spEl)    spEl.style.display    = d.sendpulse ? 'none' : 'block';
+    if(aiEl)    aiEl.style.display    = d.anthropic ? 'none' : 'block';
+    // Mostrar wrapper solo si falta algo
+    const faltaAlgo = !d.zoho || !d.anthropic || !d.sendpulse;
+    if(wrapper) wrapper.style.display = faltaAlgo ? 'block' : 'none';
+    credsStatus = d;
+    updateMethodInfo();
+  }catch(e){
+    // Si hay error, mostrar todos los bloques por seguridad
+    const wrapper = document.getElementById('setup-wrapper');
+    if(wrapper) wrapper.style.display = 'block';
+    console.log('checkCreds error:', e);
+  }
+}
+
+async function conectarZoho(){
+  const cid=document.getElementById('cfg-cid')?.value.trim();
+  const cs=document.getElementById('cfg-cs')?.value.trim();
+  const code=document.getElementById('cfg-code')?.value.trim();
+  const msg=document.getElementById('zoho-msg');
+  if(!cid||!cs||!code){msg.style.color='var(--amber)';msg.textContent='Completa todos los campos.';return;}
+  msg.innerHTML='<span style="display:inline-flex;gap:5px;align-items:center"><span class="spin" style="border-color:var(--purple);border-top-color:transparent"></span> Conectando...</span>';
+  try{
+    const d=await apiPost('/api/zoho-connect',{client_id:cid,client_secret:cs,code});
+    if(d.ok){
+      msg.style.color='var(--green)';
+      msg.textContent=d.has_refresh?'Conectado. Token guardado permanentemente.':'Conectado (sin refresh token).';
+      document.getElementById('zoho-setup').style.display='none';
+      updateMethodInfo();
+    } else {
+      msg.style.color='var(--red)';msg.textContent='Error: '+(d.error||JSON.stringify(d).slice(0,80));
+    }
+  }catch(e){msg.style.color='var(--red)';msg.textContent='Error: '+e.message;}
+}
+
+async function guardarSP(){
+  const id=document.getElementById('cfg-spid')?.value.trim();
+  const sec=document.getElementById('cfg-spsec')?.value.trim();
+  const msg=document.getElementById('sp-msg');
+  if(!id||!sec){msg.style.color='var(--amber)';msg.textContent='Completa ambos campos.';return;}
+  try{
+    const d=await apiPost('/api/save-creds',{sp_client_id:id,sp_client_secret:sec});
+    if(d.ok){msg.style.color='var(--green)';msg.textContent='Guardado.';document.getElementById('sp-setup').style.display='none';updateMethodInfo();}
+    else{msg.style.color='var(--red)';msg.textContent='Error al guardar.';}
+  }catch(e){msg.style.color='var(--red)';msg.textContent='Error: '+e.message;}
+}
+
+async function guardarAI(){
+  const key=document.getElementById('cfg-akey')?.value.trim();
+  const msg=document.getElementById('ai-msg');
+  if(!key){msg.style.color='var(--amber)';msg.textContent='Ingresa la API Key.';return;}
+  try{
+    const d=await apiPost('/api/save-creds',{anthropic_key:key});
+    if(d.ok){msg.style.color='var(--green)';msg.textContent='Guardado.';document.getElementById('ai-setup').style.display='none';}
+    else{msg.style.color='var(--red)';msg.textContent='Error al guardar.';}
+  }catch(e){msg.style.color='var(--red)';msg.textContent='Error: '+e.message;}
+}
+
+function save(){
+  localStorage.setItem('mdt_spid',document.getElementById('cfg-spid')?.value||'');
+  localStorage.setItem('mdt_spsec',document.getElementById('cfg-spsec')?.value||'');
+}
+function load(){
+  const spid=localStorage.getItem('mdt_spid')||'';
+  const spsec=localStorage.getItem('mdt_spsec')||'';
+  if(spid){const el=document.getElementById('cfg-spid');if(el)el.value=spid;}
+  if(spsec){const el=document.getElementById('cfg-spsec');if(el)el.value=spsec;}
+}
+
+function switchTab(t,btn){
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('on'));
+  document.querySelectorAll('.sec').forEach(s=>s.classList.remove('on'));
+  btn.classList.add('on');document.getElementById('tab-'+t).classList.add('on');
+  if(t==='banners'){cargarBanners();}
+  if(t==='programados') cargarProgramados();
+  if(t==='historial') renderHist();
+  if(t==='whatsapp') initWA();
+}
+
+// ── Estudiantes ──
+function addSt(n='',e='',p='',x=''){students.push({id:Date.now()+Math.random(),n,e,p,extra:x});renderSt();updateMethodInfo();}
+function rmSt(id){students=students.filter(s=>s.id!=id);renderSt();updateMethodInfo();}
+function updSt(id,f,v){const s=students.find(x=>x.id==id);if(s)s[f]=v;updateMethodInfo();}
+function esc(s){return(s||'').replace(/"/g,'&quot;').replace(/</g,'&lt;');}
+function renderSt(){
+  const el=document.getElementById('st-list');
+  const hasX=TIPOS[currentType].cols.length>3;
+  const gc=hasX?'1fr 1.2fr 0.8fr 0.6fr 0.7fr 26px':'1fr 1.2fr 0.8fr 0.7fr 26px';
+  if(!students.length){el.innerHTML='<p style="font-size:12px;color:var(--hint);font-style:italic;margin-bottom:7px">Sin estudiantes aún.</p>';return;}
+  el.innerHTML=students.map(s=>`<div class="st-row" style="grid-template-columns:${gc}">
+    <input value="${esc(s.n)}" placeholder="Nombre" oninput="updSt('${s.id}','n',this.value)"/>
+    <input value="${esc(s.e)}" placeholder="correo@email.com" oninput="updSt('${s.id}','e',this.value)"/>
+    <input value="${esc(s.p)}" placeholder="Programa" oninput="updSt('${s.id}','p',this.value)"/>
+    <input value="${esc(s.tel||'')}" placeholder="Teléfono" oninput="updSt('${s.id}','tel',this.value)" style="font-size:11px"/>
+    ${hasX?`<input value="${esc(s.extra)}" placeholder="0" oninput="updSt('${s.id}','extra',this.value)"/>`:''}
+    <button class="rm" onclick="rmSt('${s.id}')">×</button></div>`).join('');
+}
+function importar(){
+  const raw=document.getElementById('paste').value.trim();if(!raw)return;let c=0;
+  raw.split('\n').filter(l=>l.trim()).forEach(line=>{const cols=line.split('\t');if(cols.length>=2){students.push({id:Date.now()+Math.random(),n:cols[0]?.trim()||'',e:cols[1]?.trim()||'',p:cols[2]?.trim()||'',extra:cols[3]?.trim()||''});c++;}});
+  document.getElementById('paste').value='';renderSt();updateMethodInfo();
+  if(c)setSt('send-st',`${c} estudiante(s) importados.`,'ok');
+}
+
+// ── API ──
+async function apiPost(path,body){const token=sessionStorage.getItem('mdt_session')||'';const r=await fetch(BASE+path,{method:'POST',headers:{'Content-Type':'application/json','X-Session-Token':token},body:JSON.stringify(body)});return r.json();}
+
+async function conectar(){
+  const cid=document.getElementById('cfg-cid').value.trim();const cs=document.getElementById('cfg-cs').value.trim();
+  const code=document.getElementById('cfg-code').value.trim();apiKey=document.getElementById('cfg-akey').value.trim();
+  const msg=document.getElementById('cfg-msg');
+  if(!cid||!cs||!code||!apiKey){msg.style.color='var(--amber)';msg.textContent='Completa al menos Zoho y API Key.';return;}
+  msg.innerHTML='<span style="display:inline-flex;gap:5px;align-items:center"><span class="spin" style="border-color:var(--purple);border-top-color:transparent"></span> Conectando...</span>';
+  try{
+    const td=await apiPost('/api/zoho-token',{client_id:cid,client_secret:cs,code});
+    if(!td.access_token){msg.style.color='var(--red)';msg.textContent='Error Zoho: '+(td.error||JSON.stringify(td).slice(0,80));return;}
+    token=td.access_token;
+    const ad=await apiPost('/api/zoho-accounts',{token});
+    accountId=ad?.data?.[0]?.accountId;
+    if(!accountId){msg.style.color='var(--red)';msg.textContent='No se pudo obtener Account ID.';return;}
+    save();document.getElementById('conn-ok').classList.add('show');
+    msg.style.color='var(--green)';msg.textContent='Conectado correctamente.';updateMethodInfo();
+  }catch(e){msg.style.color='var(--red)';msg.textContent='Error: '+e.message;}
+}
+
+async function callClaude(userPrompt,bannerUrl,programa){
+  const bannerInfo=bannerUrl?`\nBanner URL (incluir en el HTML): ${bannerUrl}`:'';
+  const body={model:'claude-sonnet-4-20250514',max_tokens:1500,
+    system:`Eres el asistente de comunicaciones de MDT (Merlin Data Technology). Generas correos profesionales, cálidos y motivadores en español peruano.
+Devuelve ÚNICAMENTE este JSON sin texto adicional ni backticks:
+{"asunto":"...","cuerpo":"texto natural del correo","btnTexto":"texto del botón principal","linkEvento":"url del evento si hay","fecha":"fecha formateada","hora":"hora","programa":"nombre del programa"}
+El cuerpo debe ser texto natural con saltos de línea \n. Sin HTML. Máximo 4 párrafos concisos.
+El botón principal debe tener texto de acción claro. Firma como El equipo MDT.`,
+    messages:[{role:'user',content:userPrompt+bannerInfo}]};
+  const d=await apiPost('/api/claude',{body});
+  if(d.error)throw new Error(d.error.message||JSON.stringify(d.error));
+  const text=d.content?.find(b=>b.type==='text')?.text||'{}';
+  try{return JSON.parse(text.replace(/```json|```/g,'').trim());}catch(e){throw new Error('Respuesta inesperada de Claude');}
+}
+
+async function sendZoho(toEmail,subject,htmlBody){
+  const payload={fromAddress:'support@mdt.edu.pe',toAddress:toEmail,subject,content:htmlBody,mailFormat:'html'};
+  const d=await apiPost('/api/zoho-send',{payload});
+  if(d.status?.code===200||d.data?.messageId)return true;
+  if(d.error&&d.error.includes('Sesion'))throw new Error('Token expirado. Reconecta Zoho.');
+  throw new Error(d.status?.description||d.message||d.error||JSON.stringify(d).slice(0,100));
+}
+
+async function getSpToken(){
+  const id=document.getElementById('cfg-spid')?.value.trim()||localStorage.getItem('mdt_spid')||'';
+  const sec=document.getElementById('cfg-spsec')?.value.trim()||localStorage.getItem('mdt_spsec')||'';
+  if(!id||!sec)throw new Error('Faltan credenciales de SendPulse.');
+  const d=await apiPost('/api/sp-token',{client_id:id,client_secret:sec});
+  if(!d.access_token)throw new Error('Error SendPulse: '+(d.error||JSON.stringify(d).slice(0,80)));
+  return d.access_token;
+}
+
+async function sendSendPulse(toEmail,toName,subject,htmlBody){
+  // Limpiar texto plano removiendo tags HTML
+  const textBody = htmlBody.replace(/<style[^>]*>.*?<\/style>/gis,'')
+    .replace(/<[^>]*>/g,'').replace(/\s+/g,' ').trim();
+  const msg={
+    html: htmlBody,
+    text: textBody,
+    subject: subject,
+    from: {name:'Equipo MDT', email:'support@mdt.edu.pe'},
+    to: [{name:toName, email:toEmail}]
+  };
+  const d=await apiPost('/api/sp-send',{message:msg});
+  if(d.result===true||d.id||d.result==='success')return true;
+  throw new Error(d.message||d.error||JSON.stringify(d).slice(0,100));
+}
+
+// ── Preview ──
+async function preview(){
+  const f=getF();const cfg=TIPOS[currentType];
+  const st=students.find(s=>s.e)||{n:'María Torres',e:'maria@ejemplo.com',p:programs[0]||'MDT',extra:''};
+  const prog=st.p||f.prog||programs[0]||'';
+  const bannerUrl=getBannerUrl(prog,currentType);
+  const ps=document.getElementById('prev-st'),pa=document.getElementById('prev-subj'),pb=document.getElementById('prev-html');
+  ps.innerHTML='<span style="display:inline-flex;gap:5px;align-items:center"><span class="spin" style="border-color:var(--purple);border-top-color:transparent"></span> Claude redactando...</span>';
+  pa.className='prev-box prev-subj empty';pa.textContent='Generando...';
+  pb.className='prev-box prev-html empty';pb.innerHTML='Generando...';
+  try{
+    const r=await callClaude(cfg.prompt(st,f),bannerUrl,prog);
+    const html=buildHTML(st.n,r.cuerpo,bannerUrl,prog,r);
+    pa.className='prev-box prev-subj';pa.textContent=r.asunto||'(sin asunto)';
+    const previewHtml=buildHTML(st.n,r.cuerpo,bannerUrl,prog,{...r,contentImg:getContentImgUrl()});
+    pb.className='prev-box prev-html';
+    pb.innerHTML=`<iframe srcdoc="${previewHtml.replace(/"/g,'&quot;')}" style="width:100%;border:none;border-radius:7px;min-height:400px;" onload="this.style.height=Math.min(this.contentDocument.body.scrollHeight+40,650)+'px'"></iframe>`;
+    ps.innerHTML='<span style="color:var(--green);font-size:12px">Listo — correo HTML con banner</span>';
+  }catch(e){pa.className='prev-box prev-subj';pa.textContent='Error: '+e.message;pb.className='prev-box prev-html empty';pb.textContent='';ps.innerHTML='<span style="color:var(--red);font-size:12px">Error</span>';}
+}
+
+// ── Envío ──
+function setSt(id,msg,type){document.getElementById(id).innerHTML=`<div class="st ${type}">${msg}</div>`;}
+function addLog(n,e,ok,det,via){
+  const t=new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  const badge=via==='sp'?'<span class="mb mb-sp">SendPulse</span>':'<span class="mb mb-zoho">Zoho</span>';
+  document.getElementById('send-log').innerHTML+=`<div class="lr ${ok?'ok':'err'}"><span class="lt">${t}</span><span>${ok?'Enviado':'Error'} ${badge} → <strong>${n}</strong> &lt;${e}&gt;${det?' — '+det:''}</span></div>`;
+  historial.push({t,n,e,ok,det,tipo:currentType,via});
+}
+async function enviar(){
+  const valid=students.filter(s=>s.n&&s.e);
+  if(!valid.length){setSt('send-st','Agrega al menos un estudiante con nombre y correo.','warn');return;}
+  const spId=credsStatus.sendpulse||localStorage.getItem('mdt_spid')||'';
+  const useSP=spId&&valid.length>20;
+  const btn=document.getElementById('send-btn');btn.disabled=true;btn.textContent='Enviando...';
+  document.getElementById('send-log').innerHTML='';
+  setSt('send-st',`<span class="spin"></span> Procesando ${valid.length} correo(s) via ${useSP?'SendPulse':'Zoho'}...`,'info');
+  const f=getF();const cfg=TIPOS[currentType];let ok=0,err=0;
+  for(const st of valid){
+    try{
+      const prog=st.p||f.prog||programs[0]||'';
+      const bannerUrl=getBannerUrl(prog,currentType);
+      const c=await callClaude(cfg.prompt(st,f),bannerUrl,prog);
+      const html=buildHTML(st.n,c.cuerpo,bannerUrl,prog);
+      if(useSP){await sendSendPulse(st.e,st.n,c.asunto,html);}
+      else{await sendZoho(st.e,c.asunto,html);}
+      ok++;addLog(st.n,st.e,true,c.asunto,useSP?'sp':'zoho',c.asunto,c.cuerpo);
+    }catch(e){err++;addLog(st.n,st.e,false,e.message?.slice(0,80)||'Error',useSP?'sp':'zoho');}
+  }
+  btn.disabled=false;btn.textContent='Enviar a todos';
+  const via=useSP?'SendPulse':'Zoho Mail';
+  if(err===0)setSt('send-st',`${ok} correo(s) HTML enviados desde support@mdt.edu.pe via ${via}`,'ok');
+  else if(ok===0)setSt('send-st','No se pudo enviar ningún correo.','err');
+  else setSt('send-st',`${ok} enviados, ${err} con error via ${via}.`,'warn');
+}
+
+function renderHist(){
+  const el=document.getElementById('hist');
+  if(!historial.length){el.innerHTML='<p style="font-size:13px;color:var(--hint);font-style:italic">Aún no se han enviado correos.</p>';return;}
+  el.innerHTML=historial.map(h=>{
+    const badge=h.via==='sp'?'<span class="mb mb-sp">SendPulse</span>':'<span class="mb mb-zoho">Zoho</span>';
+    return`<div class="lr ${h.ok?'ok':'err'}" style="margin-bottom:7px"><span class="lt">${h.t}</span><span>[${TIPOS[h.tipo]?.label||h.tipo}] ${badge} ${h.ok?'Enviado':'Error'} — <strong>${h.n}</strong> &lt;${h.e}&gt;${h.det?' — '+h.det:''}</span></div>`;
+  }).join('');
+}
+
+// ── Excel ──
+let excelWorkbook = null;
+
+function handleDrop(e){
+  e.preventDefault();
+  document.getElementById('excel-drop').style.borderColor='var(--border2)';
+  const file=e.dataTransfer.files[0];
+  if(file) loadExcel(file);
+}
+
+function loadExcel(file){
+  if(!file) return;
+  if(!window.XLSX){alert('Librería Excel cargando, espera un momento e intenta de nuevo.');return;}
+  const reader=new FileReader();
+  reader.onload=function(ev){
+    try{
+      const data=new Uint8Array(ev.target.result);
+      excelWorkbook=XLSX.read(data,{type:'array'});
+      const sheets=excelWorkbook.SheetNames;
+      const listEl=document.getElementById('sheet-list');
+      listEl.innerHTML=sheets.map(s=>`
+        <label style="display:inline-flex;align-items:center;gap:5px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px">
+          <input type="checkbox" value="${s.replace(/"/g,'&quot;')}" checked style="width:auto;accent-color:var(--purple)"/> ${s}
+        </label>`).join('');
+      document.getElementById('sheet-selector').style.display='block';
+      document.getElementById('excel-msg').textContent=`${sheets.length} hoja(s) encontrada(s) en "${file.name}"`;
+    }catch(err){alert('Error al leer el archivo: '+err.message);}
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function selAllSheets(){
+  document.querySelectorAll('#sheet-list input[type=checkbox]').forEach(cb=>cb.checked=true);
+}
+
+function importarHojas(){
+  if(!excelWorkbook){alert('Primero carga un archivo Excel.');return;}
+  const selected=[...document.querySelectorAll('#sheet-list input[type=checkbox]:checked')].map(cb=>cb.value);
+  if(!selected.length){alert('Selecciona al menos una hoja.');return;}
+  let count=0;
+  selected.forEach(sheetName=>{
+    const ws=excelWorkbook.Sheets[sheetName];
+    const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+    const firstRow=rows[0]||[];
+    const isHeader=firstRow.some(c=>typeof c==='string'&&['nombre','correo','email','programa','teléfono','telefono'].includes(c.toLowerCase().trim()));
+    const dataRows=isHeader?rows.slice(1):rows;
+    // Detectar índices de columnas por header
+    let iNombre=0,iEmail=1,iPrograma=2,iExtra=3,iTel=-1;
+    if(isHeader){
+      firstRow.forEach((h,i)=>{
+        const k=(h||'').toString().toLowerCase().trim();
+        if(['nombre','name'].includes(k)) iNombre=i;
+        else if(['correo','email','e-mail'].includes(k)) iEmail=i;
+        else if(['programa','program','curso'].includes(k)) iPrograma=i;
+        else if(['teléfono','telefono','tel','phone','celular','whatsapp'].includes(k)) iTel=i;
+        else if(['extra','notas','notes'].includes(k)) iExtra=i;
+      });
+    }
+    dataRows.forEach(row=>{
+      const n=(row[iNombre]||'').toString().trim();
+      const e=(row[iEmail]||'').toString().trim();
+      const p=(row[iPrograma]||'').toString().trim()||sheetName;
+      const x=iExtra>=0?(row[iExtra]||'').toString().trim():'';
+      const tel=iTel>=0?(row[iTel]||'').toString().trim().replace(/[^0-9+]/g,''):'';
+      if(n&&e&&e.includes('@')){
+        students.push({id:Date.now()+Math.random(),n,e,p,extra:x,tel});
+        count++;
+      }
+    });
+  });
+  renderSt();updateMethodInfo();
+  document.getElementById('excel-msg').textContent=`✓ ${count} estudiante(s) importados de ${selected.length} hoja(s)`;
+  document.getElementById('sheet-selector').style.display='none';
+  setSt('send-st',`${count} estudiante(s) importados desde Excel.`,'ok');
+}
+
+// ── Init ──
+
+// ── Estado banners ──
+let savedBanners = [];
+let pendingBannerFile = null;
+let currentResendEntry = null;
+let historialFiltro = 'all';
+let historialCompleto = [];
+
+function handleBannerDrop(e){
+  e.preventDefault();
+  document.getElementById('banner-drop').style.borderColor='var(--border2)';
+  const file=e.dataTransfer.files[0];if(file) handleBannerFile(file);
+}
+function handleBannerFile(file){
+  if(!file) return;
+  if(file.size>5*1024*1024){alert('Máximo 5MB.');return;}
+  pendingBannerFile=file;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    document.getElementById('banner-preview-img').src=e.target.result;
+    document.getElementById('banner-preview-wrap').style.display='block';
+    document.getElementById('banner-url-input').value='';
+    const n=document.getElementById('banner-name');if(!n.value)n.value=file.name;
+  };
+  reader.readAsDataURL(file);
+}
+function previewBannerUrl(url){
+  if(!url) return;
+  pendingBannerFile=null;
+  document.getElementById('banner-preview-img').src=url;
+  document.getElementById('banner-preview-wrap').style.display='block';
+}
+async function subirBanner(){
+  const name=document.getElementById('banner-name').value.trim();
+  const urlInput=document.getElementById('banner-url-input').value.trim();
+  const msg=document.getElementById('banner-upload-msg');
+  if(!name){msg.style.color='var(--amber)';msg.textContent='Ingresa un nombre.';return;}
+  msg.innerHTML='<span style="display:inline-flex;gap:5px;align-items:center"><span class="spin" style="border-color:var(--purple);border-top-color:transparent"></span> Guardando...</span>';
+  try{
+    let d;
+    if(pendingBannerFile){
+      const reader=new FileReader();
+      const b64=await new Promise(res=>{reader.onload=e=>res(e.target.result);reader.readAsDataURL(pendingBannerFile);});
+      d=await apiPost('/api/banner-upload',{name,data:b64});
+    } else if(urlInput){
+      d=await apiPost('/api/banner-url',{name,url:urlInput});
+    } else {msg.style.color='var(--amber)';msg.textContent='Selecciona archivo o pega URL.';return;}
+    if(d.ok){
+      msg.style.color='var(--green)';msg.textContent='Banner guardado.';
+      document.getElementById('banner-name').value='';
+      document.getElementById('banner-url-input').value='';
+      document.getElementById('banner-preview-wrap').style.display='none';
+      pendingBannerFile=null;
+      cargarBanners();
+    } else {msg.style.color='var(--red)';msg.textContent='Error: '+(d.error||'desconocido');}
+  }catch(e){msg.style.color='var(--red)';msg.textContent='Error: '+e.message;}
+}
+async function cargarBanners(){
+  try{
+    const d=await apiPost('/api/banners-list',{});
+    savedBanners=d.banners||[];
+    renderBannersSaved();
+    renderBannersAssignment();
+    const sel=document.getElementById('banner-prog-sel');
+    if(sel) sel.innerHTML='<option value="">Sin programa específico</option>'+programs.map(p=>`<option value="${p}">${p}</option>`).join('');
+  }catch(e){console.log('cargarBanners:',e);}
+}
+function renderBannersSaved(){
+  const el=document.getElementById('banners-saved-list');
+  if(!el) return;
+  if(!savedBanners.length){el.innerHTML='<p style="font-size:12px;color:var(--hint);font-style:italic">No hay banners guardados aún.</p>';return;}
+  el.innerHTML=savedBanners.map(b=>`
+    <div class="banner-card">
+      <img class="banner-thumb" src="${b.url}" alt="${b.name}" onerror="this.style.background='var(--border2)'"/>
+      <div class="banner-info"><p>${b.name}</p><span>${b.type==='upload'?'Subido'+(b.size?' · '+Math.round(b.size/1024)+'KB':''):'URL externa'}</span></div>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-g btn-sm" onclick="copiarUrlBanner('${b.url}')" style="font-size:11px">Copiar URL</button>
+        <button class="btn btn-g btn-sm" onclick="eliminarBanner('${b.name}','${b.type}')" style="font-size:11px;color:var(--red)">Eliminar</button>
+      </div>
+    </div>`).join('');
+}
+function copiarUrlBanner(url){
+  const full=url.startsWith('http')?url:'http://localhost:8080'+url;
+  navigator.clipboard.writeText(full).then(()=>alert('URL copiada: '+full));
+}
+async function eliminarBanner(name,type){
+  if(!confirm('Eliminar "'+name+'"?')) return;
+  const d=await apiPost('/api/banner-delete',{name,type});
+  if(d.ok) cargarBanners();
+}
+function renderBannersAssignment(){
+  const el=document.getElementById('banners-assignment-list');if(!el) return;
+  const opts=['(ninguno)',...savedBanners.map(b=>b.name)];
+  el.innerHTML=programs.map((prog,i)=>{
+    const rows=TIPO_KEYS.map(tipo=>{
+      const current=(banners[prog]?.[tipo])||'';
+      const selOpts=opts.map(bn=>{
+        const url=bn==='(ninguno)'?'':(savedBanners.find(b=>b.name===bn)?.url||'');
+        return`<option value="${url}" ${current===url&&(bn!=='(ninguno)'||!current)?'selected':''}>${bn}</option>`;
+      }).join('');
+      return`<div class="banner-item"><label>${TIPO_LABELS[tipo]}</label>
+        <select onchange="setBannerFromSelect('${prog.replace(/'/g,"\'")}','${tipo}',this.value)">${selOpts}</select>
+        ${current?`<img src="${current}" style="width:100%;height:36px;object-fit:cover;border-radius:4px;margin-top:4px" onerror="this.style.display='none'"/>`:''}
+      </div>`;
+    }).join('');
+    return`<div class="prog-card">
+      <div class="prog-header" onclick="toggleProg(${i})">
+        <span class="prog-name">${prog}</span>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:11px;color:var(--muted)">${Object.keys(banners[prog]||{}).filter(k=>banners[prog][k]).length} asignado(s)</span>
+          <span class="chevron" id="chev-${i}">▼</span>
+          <button class="btn btn-red btn-sm" onclick="event.stopPropagation();removeProg(${i})" style="padding:3px 8px;font-size:11px">Eliminar</button>
+        </div>
+      </div>
+      <div class="prog-body" id="prog-body-${i}"><div class="banner-grid">${rows}</div></div>
+    </div>`;
+  }).join('');
+}
+function setBannerFromSelect(prog,tipo,url){
+  if(!banners[prog]) banners[prog]={};
+  banners[prog][tipo]=url;saveBanners();renderBannersAssignment();
+}
+function addLog(n,e,ok,det,via,asunto,cuerpo){
+  const t=new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  const ts=new Date().toLocaleDateString('es-PE',{day:'2-digit',month:'2-digit',year:'numeric'})+' '+t;
+  const badge=via==='sp'?'<span class="mb mb-sp">SendPulse</span>':'<span class="mb mb-zoho">Zoho</span>';
+  document.getElementById('send-log').innerHTML+=`<div class="lr ${ok?'ok':'err'}"><span class="lt">${t}</span><span>${ok?'Enviado':'Error'} ${badge} — <strong>${n}</strong> &lt;${e}&gt;${det?' — '+det:''}</span></div>`;
+  const entry={ts,n,e,ok,det,tipo:currentType,via,asunto:asunto||'',cuerpo:cuerpo||''};
+  historialCompleto.push(entry);
+  apiPost('/api/history-save',{entries:[entry]}).catch(()=>{});
+}
+async function cargarHistorial(){
+  try{const d=await apiPost('/api/history-load',{});historialCompleto=d.entries||[];}catch(e){historialCompleto=[];}
+}
+function filtrarHist(f){
+  historialFiltro=f;
+  document.querySelectorAll('[id^="filt-"]').forEach(b=>{b.style.borderColor='';b.style.color='';});
+  const btn=document.getElementById('filt-'+f);
+  if(btn){btn.style.borderColor='var(--purple)';btn.style.color='var(--purple)';}
+  renderHist();
+}
+function limpiarHist(){
+  if(!confirm('Limpiar todo el historial?')) return;
+  historialCompleto=[];
+  apiPost('/api/history-save',{entries:[]}).catch(()=>{});
+  renderHist();
+}
+function renderHist(){
+  const el=document.getElementById('hist');
+  let entries=[...historialCompleto];
+  if(historialFiltro==='ok') entries=entries.filter(h=>h.ok);
+  if(historialFiltro==='err') entries=entries.filter(h=>!h.ok);
+  if(!entries.length){el.innerHTML='<p style="font-size:13px;color:var(--hint);font-style:italic">Sin correos en el historial.</p>';return;}
+  el.innerHTML=entries.reverse().map(h=>{
+    const badge=h.via==='sp'?'<span class="mb mb-sp">SendPulse</span>':'<span class="mb mb-zoho">Zoho</span>';
+    const safeH=encodeURIComponent(JSON.stringify(h));
+    const resendBtn=`<button class="resend-btn" onclick="abrirResend(decodeURIComponent('${safeH}'))">↩ Reenviar</button>`;
+    return`<div class="lr ${h.ok?'ok':'err'}" style="margin-bottom:8px;flex-direction:column;align-items:flex-start">
+      <div style="display:flex;gap:8px;align-items:center;width:100%">
+        <span class="lt">${h.ts||h.t}</span>
+        <span style="flex:1">[${TIPOS[h.tipo]?.label||h.tipo||''}] ${badge} ${h.ok?'Enviado':'Error'} — <strong>${h.n}</strong> &lt;${h.e}&gt;</span>
+        ${resendBtn}
+      </div>
+      ${h.asunto?`<div class="hist-detail">Asunto: ${h.asunto}</div>`:''}
+      ${!h.ok&&h.det?`<div class="hist-detail" style="color:var(--red)">${h.det}</div>`:''}
+    </div>`;
+  }).join('');
+}
+function abrirResend(entryStr){
+  currentResendEntry=JSON.parse(entryStr);
+  document.getElementById('resend-to').textContent='Para: '+currentResendEntry.n+' <'+currentResendEntry.e+'>';
+  document.getElementById('resend-modal').classList.add('show');
+  document.getElementById('resend-msg').textContent='';
+}
+function cerrarResend(){document.getElementById('resend-modal').classList.remove('show');currentResendEntry=null;}
+async function confirmarReenvio(){
+  if(!currentResendEntry) return;
+  const tipo=document.querySelector('input[name="resend-type"]:checked')?.value||'exact';
+  const msg=document.getElementById('resend-msg');
+  msg.innerHTML='<span class="spin" style="border-color:var(--purple);border-top-color:transparent"></span> Reenviando...';
+  const h=currentResendEntry;
+  try{
+    let asunto,cuerpo;
+    if(tipo==='exact'){
+      asunto=h.asunto;cuerpo=h.cuerpo;
+      if(!asunto||!cuerpo) throw new Error('Sin contenido guardado. Usa "datos actuales".');
+    } else {
+      const f=getF();const cfg=TIPOS[h.tipo||currentType];
+      const st={n:h.n,e:h.e,p:h.p||f.prog,extra:h.extra||''};
+      const prog=st.p||f.prog||programs[0]||'';
+      const bannerUrl=getBannerUrl(prog,h.tipo||currentType);
+      const c=await callClaude(cfg.prompt(st,f),bannerUrl,prog);
+      asunto=c.asunto;cuerpo=c.cuerpo;
+    }
+    const prog=h.p||'';
+    const bannerUrl=getBannerUrl(prog,h.tipo||currentType);
+    const htmlBody=buildHTML(h.n,cuerpo,bannerUrl,prog);
+    await sendZoho(h.e,asunto,htmlBody);
+    msg.style.color='var(--green)';msg.textContent='Reenviado correctamente.';
+    addLog(h.n,h.e,true,'(reenvío) '+asunto,'zoho',asunto,cuerpo);
+    setTimeout(()=>cerrarResend(),1500);
+  }catch(e){msg.style.color='var(--red)';msg.textContent='Error: '+e.message;}
+}
+
+// ── Selector de servicio ──
+let selectedService = 'auto';
+function setService(svc){
+  selectedService = svc;
+  ['auto','zoho','sp'].forEach(s=>{
+    const btn = document.getElementById('svc-'+s);
+    if(btn){
+      btn.className = 'btn btn-sm' + (s===svc||('sendpulse'===svc&&s==='sp') ? ' svc-btn-active' : ' btn-g');
+    }
+  });
+  const info = document.getElementById('svc-info');
+  if(info){
+    if(svc==='auto') info.textContent='Auto: usa Zoho ≤20, SendPulse >20';
+    else if(svc==='zoho') info.textContent='Forzado: siempre Zoho Mail';
+    else info.textContent='Forzado: siempre SendPulse';
+  }
+  updateMethodInfo();
+}
+
+// ── Programar envío ──
+function abrirProgramar(){
+  const valid = students.filter(s=>s.n&&s.e);
+  if(!valid.length){setSt('send-st','Agrega al menos un estudiante primero.','warn');return;}
+  const fd = document.getElementById('sch-fecha');
+  if(fd) fd.value = new Date().toISOString().split('T')[0];
+  const resumen = document.getElementById('sch-resumen');
+  if(resumen){
+    const f=getF();
+    resumen.innerHTML = `<strong>${valid.length}</strong> estudiante(s) · Tipo: <strong>${TIPOS[currentType]?.label||currentType}</strong> · Programa: <strong>${f.prog||'(del estudiante)'}</strong>`;
+  }
+  document.getElementById('schedule-modal').classList.add('show');
+  document.getElementById('sch-msg').textContent='';
+}
+function cerrarProgramar(){
+  document.getElementById('schedule-modal').classList.remove('show');
+}
+async function guardarProgramacion(){
+  const fecha = document.getElementById('sch-fecha').value;
+  const hora  = document.getElementById('sch-hora').value;
+  const svc   = document.getElementById('sch-service').value;
+  const msg   = document.getElementById('sch-msg');
+  if(!fecha||!hora){msg.style.color='var(--amber)';msg.textContent='Selecciona fecha y hora.';return;}
+  const scheduledAt = fecha+'T'+hora+':00';
+  if(new Date(scheduledAt) <= new Date()){msg.style.color='var(--amber)';msg.textContent='La fecha debe ser futura.';return;}
+  const f=getF();
+  const valid=students.filter(s=>s.n&&s.e);
+  msg.innerHTML='<span class="spin" style="border-color:var(--purple);border-top-color:transparent"></span> Guardando...';
+  try{
+    const d=await apiPost('/api/schedule-save',{
+      scheduled_at: scheduledAt,
+      tipo: currentType,
+      programa: f.prog,
+      evento: {nombre:f.nom,fecha:f.fecha,hora:f.hora,link:f.link,inst:f.inst,prog:f.prog},
+      students: valid,
+      service: svc
+    });
+    if(d.ok){
+      msg.style.color='var(--green)';
+      const dt=new Date(scheduledAt).toLocaleString('es-PE',{weekday:'long',day:'numeric',month:'long',hour:'2-digit',minute:'2-digit'});
+      msg.textContent=`Programado para ${dt}`;
+      setTimeout(()=>cerrarProgramar(),2000);
+    } else {
+      msg.style.color='var(--red)';msg.textContent='Error: '+(d.error||'desconocido');
+    }
+  }catch(e){msg.style.color='var(--red)';msg.textContent='Error: '+e.message;}
+}
+
+async function cargarProgramados(){
+  const el=document.getElementById('programados-list');
+  if(!el) return;
+  try{
+    const d=await apiPost('/api/schedule-list',{});
+    const tasks=d.tasks||[];
+    if(!tasks.length){el.innerHTML='<p style="font-size:12px;color:var(--hint);font-style:italic">No hay envíos programados.</p>';return;}
+    el.innerHTML=[...tasks].reverse().map(t=>{
+      const dt=new Date(t.scheduled_at).toLocaleString('es-PE',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+      const statusClass={'pending':'prog-status-pending','done':'prog-status-done','error':'prog-status-error'}[t.status]||'';
+      const statusLabel={'pending':'⏳ Pendiente','done':'✓ Enviado','error':'✗ Error'}[t.status]||t.status;
+      const svcLabel={'auto':'Auto','zoho':'Zoho','sendpulse':'SendPulse'}[t.service]||t.service;
+      return`<div class="prog-card-item">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+          <div>
+            <p style="font-size:13px;font-weight:500">${TIPOS[t.tipo]?.label||t.tipo} · ${t.programa||'(varios programas)'}</p>
+            <p style="font-size:12px;color:var(--muted);margin-top:2px">📅 ${dt} · 📧 ${(t.students||[]).length} estudiantes · Vía: ${svcLabel}</p>
+          </div>
+          <span class="tag ${statusClass}" style="font-size:11px;font-weight:600">${statusLabel}</span>
+        </div>
+        ${t.status==='pending'?`<button class="btn btn-g btn-sm" onclick="cancelarProgramado('${t.id}')" style="font-size:11px;color:var(--red)">Cancelar</button>`:''}
+        ${t.status==='error'?`<p style="font-size:11px;color:var(--red);margin-top:6px">${t.error||''}</p>`:''}
+      </div>`;
+    }).join('');
+  }catch(e){el.innerHTML='<p style="font-size:12px;color:var(--red)">Error al cargar.</p>';}
+}
+
+async function cancelarProgramado(id){
+  if(!confirm('¿Cancelar este envío programado?')) return;
+  const d=await apiPost('/api/schedule-delete',{id});
+  if(d.ok) cargarProgramados();
+}
+
+// ── Sobrescribir enviar() para usar selectedService ──
+const _origEnviar = window.enviar;
+window.enviar = async function(){
+  const valid=students.filter(s=>s.n&&s.e);
+  if(!valid.length){setSt('send-st','Agrega al menos un estudiante con nombre y correo.','warn');return;}
+  const useSP = selectedService==='sendpulse' ||
+    (selectedService==='auto' && credsStatus.sendpulse && valid.length>20);
+  const btn=document.getElementById('send-btn');btn.disabled=true;btn.textContent='Enviando...';
+  document.getElementById('send-log').innerHTML='';
+  const via=useSP?'SendPulse':'Zoho Mail';
+  setSt('send-st',`<span class="spin"></span> Procesando ${valid.length} correo(s) via ${via}...`,'info');
+  const f=getF();const cfg=TIPOS[currentType];let ok=0,err=0;
+  for(const st of valid){
+    try{
+      const prog=st.p||f.prog||programs[0]||'';
+      const bannerUrl=getBannerUrl(prog,currentType);
+      const c=await callClaude(cfg.prompt(st,f),bannerUrl,prog);
+      const htmlBody=buildHTML(st.n,c.cuerpo,bannerUrl,prog,{...c,contentImg:getContentImgUrl()});
+      if(useSP){await sendSendPulse(st.e,st.n,c.asunto,htmlBody);}
+      else{await sendZoho(st.e,c.asunto,htmlBody);}
+      ok++;addLog(st.n,st.e,true,c.asunto,useSP?'sp':'zoho',c.asunto,c.cuerpo);
+    }catch(e){err++;addLog(st.n,st.e,false,e.message?.slice(0,80)||'Error',useSP?'sp':'zoho','','');}
+  }
+  btn.disabled=false;btn.textContent='Enviar ahora';
+  if(err===0)setSt('send-st',`${ok} correo(s) enviados via ${via}`,'ok');
+  else if(ok===0)setSt('send-st','No se pudo enviar ningún correo.','err');
+  else setSt('send-st',`${ok} enviados, ${err} con error via ${via}.`,'warn');
+};
+
+// ── Imagen de contenido ──
+function selContentImg(type){
+  ['upload','saved','url'].forEach(t=>{
+    const area = document.getElementById('cimg-'+t+'-area');
+    const btn  = document.getElementById('cimg-btn-'+t);
+    if(area) area.style.display = t===type?'block':'none';
+    if(btn)  btn.style.background = t===type?'var(--purple)':'';
+    if(btn)  btn.style.color = t===type?'#fff':'';
+  });
+  if(type==='saved'){
+    // Poblar select con banners guardados
+    const sel = document.getElementById('cimg-saved-sel');
+    if(sel){
+      sel.innerHTML = '<option value="">Selecciona un banner...</option>' +
+        savedBanners.map(b=>`<option value="${b.url}">${b.name}</option>`).join('');
+    }
+  }
+}
+
+function handleContentImgFile(file){
+  if(!file) return;
+  if(file.size > 5*1024*1024){alert('Máximo 5MB.');return;}
+  const reader = new FileReader();
+  reader.onload = e=>{
+    contentImageB64 = e.target.result;
+    contentImageUrl = '';
+    showContentImgPreview(e.target.result);
+  };
+  reader.readAsDataURL(file);
+}
+
+function setContentImgFromSaved(url){
+  if(!url) return;
+  contentImageUrl = url.startsWith('http') ? url : 'http://localhost:8080'+url;
+  contentImageB64 = '';
+  showContentImgPreview(contentImageUrl);
+}
+
+function setContentImgUrl(url){
+  contentImageUrl = url;
+  contentImageB64 = '';
+  if(url) showContentImgPreview(url);
+}
+
+function showContentImgPreview(src){
+  const preview = document.getElementById('cimg-preview');
+  const img     = document.getElementById('cimg-preview-img');
+  if(preview && img){
+    img.src = src;
+    preview.style.display = 'block';
+  }
+}
+
+function clearContentImg(){
+  contentImageUrl = '';
+  contentImageB64 = '';
+  ['upload','saved','url'].forEach(t=>{
+    const area = document.getElementById('cimg-'+t+'-area');
+    const btn  = document.getElementById('cimg-btn-'+t);
+    if(area) area.style.display='none';
+    if(btn){btn.style.background='';btn.style.color='';}
+  });
+  const preview = document.getElementById('cimg-preview');
+  if(preview) preview.style.display='none';
+}
+
+function getContentImgUrl(){
+  return contentImageB64 || contentImageUrl || '';
+}
+
+// ── WhatsApp Business API ──
+const WA_TOKEN_DEFAULT = "EAANkamuLIcsBRLZAxnuTlhMadJZBgoIaowSivJ7Y3f2dZAZAyZADNR53mQouIgg1bSXTvgaTdMuyGQYRZAlWQgqxJeNoiRZBFQrR47wo5rApnbZCzHiwsA0YJaLXdSSTcalF3KYBMb5Xm4xyOj2PGnnZCZC69O6ig07RIa0amwpLD9cOcyCHVDusGjDqDF0l8XkFVs6RFf9TO3tJT7MGhZCaU1pOgMaR1STLZAb0LLDOp5YUNq2MZALy0ZCyoql1Po6YAUW8ZB0JbRXZAz6IL4mZBTZAJHbJNSUgZDZD";
+const WA_PHONE_ID_DEFAULT = "1033638096499680";
+const WA_WABA_ID_DEFAULT = "1233747678473933";
+
+function initWA(){
+  // Poblar campos con valores por defecto
+  const phoneEl = document.getElementById('wa-phone-id');
+  const wabaEl  = document.getElementById('wa-waba-id');
+  const tokenEl = document.getElementById('wa-token');
+  if(phoneEl && !phoneEl.value) phoneEl.value = WA_PHONE_ID_DEFAULT;
+  if(wabaEl  && !wabaEl.value)  wabaEl.value  = WA_WABA_ID_DEFAULT;
+  if(tokenEl && !tokenEl.value) tokenEl.value  = WA_TOKEN_DEFAULT;
+  // Mostrar conteo de estudiantes
+  const countEl = document.getElementById('wa-students-count');
+  if(countEl){
+    const valid = students.filter(s=>s.n&&s.e);
+    countEl.textContent = valid.length > 0
+      ? `${valid.length} estudiante(s) cargados listos para envío masivo.`
+      : 'Carga estudiantes en la pestaña "Nuevo envío" primero.';
+  }
+}
+
+async function guardarWA(){
+  const phoneId = document.getElementById('wa-phone-id').value.trim();
+  const wabaId  = document.getElementById('wa-waba-id').value.trim();
+  const token   = document.getElementById('wa-token').value.trim();
+  const msg     = document.getElementById('wa-cfg-msg');
+  if(!phoneId || !wabaId || !token){msg.style.color='var(--amber)';msg.textContent='Completa todos los campos.';return;}
+  const d = await apiPost('/api/save-creds',{wa_token:token, wa_phone_id:phoneId, wa_waba_id:wabaId});
+  if(d.ok){msg.style.color='var(--green)';msg.textContent='Credenciales guardadas.';}
+  else{msg.style.color='var(--red)';msg.textContent='Error al guardar.';}
+}
+
+function getWACreds(){
+  return {
+    token:    document.getElementById('wa-token')?.value || WA_TOKEN_DEFAULT,
+    phone_id: document.getElementById('wa-phone-id')?.value || WA_PHONE_ID_DEFAULT
+  };
+}
+
+async function enviarWAIndividual(){
+  const nombre  = document.getElementById('wa-nombre').value.trim();
+  const numero  = document.getElementById('wa-numero').value.trim().replace(/[^0-9]/g,'');
+  const mensaje = document.getElementById('wa-mensaje').value.trim();
+  const msg     = document.getElementById('wa-send-msg');
+  if(!numero || !mensaje){msg.style.color='var(--amber)';msg.textContent='Ingresa número y mensaje.';return;}
+  msg.innerHTML='<span class="spin" style="border-color:var(--purple);border-top-color:transparent"></span> Enviando...';
+  const creds = getWACreds();
+  // Modo prueba: usar template hello_world
+  // En producción con número verificado, cambiar type a 'text'
+  const d = await apiPost('/api/wa-send',{
+    token: creds.token, phone_id: creds.phone_id,
+    to: numero, type:'template',
+    template_name: 'hello_world',
+    lang: 'en_US'
+  });
+  if(d.messages || d.id){
+    msg.style.color='var(--green)';
+    msg.textContent=`Enviado a ${nombre||numero} ✓`;
+  } else {
+    msg.style.color='var(--red)';
+    msg.textContent='Error: '+(d.error?.message||d.error||JSON.stringify(d).slice(0,80));
+  }
+}
+
+async function generarMsgWA(){
+  const evento = document.getElementById('wa-evento')?.value || '';
+  const tipo   = document.getElementById('wa-tipo')?.value || 'recordatorio';
+  const nombre = document.getElementById('wa-nombre')?.value || 'estudiante';
+  const msg    = document.getElementById('wa-send-msg');
+  msg.innerHTML='<span class="spin" style="border-color:var(--purple);border-top-color:transparent"></span> Claude redactando...';
+  const body = {
+    model:'claude-sonnet-4-20250514', max_tokens:300,
+    system:'Eres el asistente de MDT. Genera mensajes de WhatsApp cortos, cálidos y directos en español. Máximo 3 oraciones. Sin saludos largos.',
+    messages:[{role:'user',content:`Mensaje de WhatsApp de ${tipo} para: ${nombre}. Contexto: ${evento}. Programa: MDT. Firma: El equipo MDT`}]
+  };
+  const d = await apiPost('/api/claude',{body});
+  const texto = d.content?.[0]?.text || '';
+  if(texto){
+    document.getElementById('wa-mensaje').value = texto;
+    msg.style.color='var(--green)'; msg.textContent='Mensaje generado ✓';
+  } else {
+    msg.style.color='var(--red)'; msg.textContent='Error al generar mensaje.';
+  }
+}
+
+async function enviarWAMasivo(){
+  const valid = students.filter(s=>s.n&&s.e);
+  if(!valid.length){alert('No hay estudiantes cargados. Ve a la pestaña "Nuevo envío" y carga tu lista.');return;}
+  const tipo   = document.getElementById('wa-tipo').value;
+  const evento = document.getElementById('wa-evento').value.trim();
+  const msg    = document.getElementById('wa-masivo-msg');
+  const log    = document.getElementById('wa-log');
+  const creds  = getWACreds();
+  if(!confirm(`¿Enviar WhatsApp a ${valid.length} estudiantes?`)) return;
+  msg.innerHTML=`<span class="spin" style="border-color:var(--purple);border-top-color:transparent"></span> Enviando ${valid.length} mensajes...`;
+  log.innerHTML='';
+  let ok=0, err=0;
+  for(const st of valid){
+    try{
+      // Generar mensaje con Claude
+      const body = {
+        model:'claude-sonnet-4-20250514', max_tokens:250,
+        system:'Genera mensajes de WhatsApp cortos y personalizados para MDT. Solo el mensaje, sin explicaciones. Máximo 3 oraciones.',
+        messages:[{role:'user',content:`Mensaje de ${tipo} para ${st.n} del programa ${st.p||'MDT'}. Contexto: ${evento}`}]
+      };
+      const claude = await apiPost('/api/claude',{body});
+      const texto  = claude.content?.[0]?.text || evento;
+      // Enviar via WhatsApp
+      const numero = (st.tel||st.phone||'').replace(/[^0-9]/g,'');
+      if(!numero){ err++; log.innerHTML+=`<div class="lr err"><span class="lt">${new Date().toLocaleTimeString()}</span>Sin número: ${st.n}</div>`; continue; }
+      const d = await apiPost('/api/wa-send',{
+        token: creds.token, phone_id: creds.phone_id,
+        to: numero, type:'text', message: texto
+      });
+      if(d.messages||d.id){
+        ok++;
+        log.innerHTML+=`<div class="lr ok"><span class="lt">${new Date().toLocaleTimeString()}</span>✓ ${st.n} (${numero})</div>`;
+      } else {
+        err++;
+        log.innerHTML+=`<div class="lr err"><span class="lt">${new Date().toLocaleTimeString()}</span>✗ ${st.n} — ${d.error?.message||'Error'}</div>`;
+      }
+    }catch(e){
+      err++;
+      log.innerHTML+=`<div class="lr err"><span class="lt">${new Date().toLocaleTimeString()}</span>✗ ${st.n} — ${e.message}</div>`;
+    }
+  }
+  msg.style.color = err===0?'var(--green)':'var(--amber)';
+  msg.textContent = `${ok} enviados, ${err} errores.`;
+}
+
+load();
+selType('masterclass');
+addSt('María Torres','maria@ejemplo.com',programs[0]);
+cargarHistorial();
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</body>
+</html>
