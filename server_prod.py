@@ -789,6 +789,7 @@ def execute_scheduled_task(task):
                 sp_token = get_sp_token()
                 if not sp_token:
                     raise Exception("No se pudo obtener token SendPulse")
+                print(f"  SP cuerpo inicio: {repr(cuerpo[:100])}")
                 msg = {"html":cuerpo,"text":cuerpo,"subject":asunto,
                        "from":{"name":"Equipo MDT","email":"support@mdt.edu.pe"},
                        "to":[{"name":st.get("n",""),"email":st.get("e","")}]}
