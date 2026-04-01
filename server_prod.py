@@ -29,7 +29,8 @@ def load_creds():
     env_creds = {}
     for key in ["zoho_client_id","zoho_client_secret","zoho_refresh_token",
                 "zoho_access_token","zoho_account_id","sp_client_id",
-                "sp_client_secret","anthropic_key","wa_token","wa_phone_id","wa_waba_id"]:
+                "sp_client_secret","anthropic_key","wa_token","wa_phone_id","wa_waba_id",
+                "zepto_api_key"]:
         val = os.environ.get(key.upper(),"")
         if val: env_creds[key] = val
     if env_creds:
@@ -332,6 +333,7 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json({
                 "zoho": bool(creds.get("zoho_refresh_token")),
                 "sendpulse": bool(creds.get("sp_api_key") or creds.get("sp_client_id")),
+                "zeptomail": bool(creds.get("zepto_api_key")),
                 "anthropic": bool(creds.get("anthropic_key")),
                 "zoho_account_id": creds.get("zoho_account_id","")
             })
@@ -383,6 +385,7 @@ class Handler(BaseHTTPRequestHandler):
             "/api/zoho-send":       self._zoho_send,
             "/api/claude":          self._claude,
             "/api/sp-send":         self._sp_send,
+            "/api/zepto-send":      self._zepto_send,
             "/api/banner-upload":   self._banner_upload,
             "/api/banner-url":      self._banner_url,
             "/api/banners-list":    self._banners_list,
@@ -442,6 +445,7 @@ class Handler(BaseHTTPRequestHandler):
         if p.get("sp_api_key"):    creds["sp_api_key"]    = p["sp_api_key"]
         if p.get("sp_client_id"):  creds["sp_client_id"]  = p["sp_client_id"]
         if p.get("sp_client_secret"): creds["sp_client_secret"] = p["sp_client_secret"]
+        if p.get("zepto_api_key"): creds["zepto_api_key"] = p["zepto_api_key"]
         save_creds(creds)
         self.send_json({"ok":True})
 
@@ -525,6 +529,34 @@ class Handler(BaseHTTPRequestHandler):
         print(f"  SP response: {str(r)[:300]}")
         self.send_json(r)
 
+
+    # ── ZeptoMail: enviar ──
+    def _zepto_send(self, p):
+        creds = load_creds()
+        api_key = creds.get("zepto_api_key","")
+        if not api_key:
+            self.send_json({"error":"ZeptoMail no configurado. Agrega tu API key."}); return
+        to_email = p.get("to_email","")
+        to_name  = p.get("to_name","")
+        subject  = p.get("subject","")
+        html     = p.get("html","")
+        text     = p.get("text","")
+        if not to_email or not html:
+            self.send_json({"error":"Faltan campos requeridos (to_email, html)."}); return
+        payload = {
+            "from": {"address": "support@mdt.edu.pe", "name": "Equipo MDT"},
+            "to": [{"email_address": {"address": to_email, "name": to_name or to_email}}],
+            "subject": subject,
+            "htmlbody": html,
+            "textbody": text
+        }
+        r = self._req(
+            "https://api.zeptomail.com/v1.1/email",
+            payload,
+            {"Content-Type":"application/json","Authorization":f"Zoho-enczapikey {api_key}"}
+        )
+        print(f"  Zepto response: {str(r)[:300]}")
+        self.send_json(r)
 
     # ── Banners ──
     def _banner_upload(self, p):
@@ -791,17 +823,21 @@ def execute_scheduled_task(task):
             asunto = correo.get("asunto","Sin asunto")
             cuerpo = correo.get("cuerpo","")
             # Enviar
-            use_sp = (service == "sendpulse") or (service == "auto" and len(students) > 20)
-            if use_sp:
-                sp_token = get_sp_token()
-                if not sp_token:
-                    raise Exception("No se pudo obtener token SendPulse")
-                print(f"  SP cuerpo inicio: {repr(cuerpo[:100])}")
-                msg = {"html":cuerpo,"text":cuerpo,"subject":asunto,
-                       "from":{"name":"Equipo MDT","email":"support@mdt.edu.pe"},
-                       "to":[{"name":st.get("n",""),"email":st.get("e","")}]}
-                _req_static("https://api.sendpulse.com/smtp/emails",{"email":msg},
-                    {"Content-Type":"application/json","Authorization":f"Bearer {sp_token}"})
+            zepto_key = creds.get("zepto_api_key","")
+            use_zepto = (service == "zeptomail") or (service == "auto" and zepto_key and len(students) > 20)
+            if use_zepto:
+                if not zepto_key:
+                    raise Exception("ZeptoMail no configurado")
+                text_body = cuerpo  # cuerpo ya es texto plano desde Claude
+                zp = {
+                    "from": {"address":"support@mdt.edu.pe","name":"Equipo MDT"},
+                    "to": [{"email_address":{"address":st.get("e",""),"name":st.get("n","")}}],
+                    "subject": asunto,
+                    "htmlbody": cuerpo,
+                    "textbody": text_body
+                }
+                _req_static("https://api.zeptomail.com/v1.1/email", zp,
+                    {"Content-Type":"application/json","Authorization":f"Zoho-enczapikey {zepto_key}"})
             else:
                 zoho_token, acc_id = get_zoho_token()
                 if not zoho_token:
@@ -811,7 +847,7 @@ def execute_scheduled_task(task):
                 _req_static(f"https://mail.zoho.com/api/accounts/{acc_id}/messages",payload,
                     {"Content-Type":"application/json","Authorization":f"Zoho-oauthtoken {zoho_token}"})
             ok_count += 1
-            history.append({"ts":datetime.now().isoformat(),"n":st.get("n",""),"e":st.get("e",""),"ok":True,"asunto":asunto,"tipo":task.get("tipo",""),"via":"sp" if use_sp else "zoho"})
+            history.append({"ts":datetime.now().isoformat(),"n":st.get("n",""),"e":st.get("e",""),"ok":True,"asunto":asunto,"tipo":task.get("tipo",""),"via":"zepto" if use_zepto else "zoho"})
         except Exception as e:
             err_count += 1
             history.append({"ts":datetime.now().isoformat(),"n":st.get("n",""),"e":st.get("e",""),"ok":False,"det":str(e),"tipo":task.get("tipo",""),"via":service})
@@ -838,6 +874,7 @@ if __name__ == "__main__":
     creds = load_creds()
     print(f"  Zoho:       {'Conectado' if creds.get('zoho_refresh_token') else 'Pendiente'}")
     print(f"  SendPulse:  {'Configurado' if creds.get('sp_client_id') else 'Pendiente'}")
+    print(f"  ZeptoMail: {'Configurado' if creds.get('zepto_api_key') else 'Pendiente'}")
     print(f"  Anthropic:  {'Configurado' if creds.get('anthropic_key') else 'Pendiente'}")
     print(f"  URL:        http://localhost:{port}")
     print("  Ctrl+C para detener\n")

@@ -152,15 +152,12 @@ textarea{resize:vertical;line-height:1.6}
   </div>
 
   <div id="sp-setup" class="setup" style="border-color:var(--green-border)">
-    <div class="setup-title" style="color:var(--green)">⚡ SendPulse — envíos masivos (opcional)</div>
+    <div class="setup-title" style="color:var(--green)">⚡ ZeptoMail — envíos masivos (opcional)</div>
     <div class="setup-sec">
-      <div class="g2">
-        <div><label>API User ID</label><input id="cfg-spid" class="mono" placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"/></div>
-        <div><label>API Secret</label><input id="cfg-spsec" class="mono" type="password" placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"/></div>
-      </div>
-      <div class="sp-note" style="margin-bottom:10px">≤ 20 destinatarios → Zoho &nbsp;|&nbsp; > 20 → SendPulse automáticamente</div>
+      <div><label>API Key (Send Mail Token)</label><input id="cfg-zepto" class="mono" type="password" placeholder="Zoho-enczapikey xxxxxxxxxxxxxxxx"/></div>
+      <div class="sp-note" style="margin-bottom:10px">≤ 20 destinatarios → Zoho &nbsp;|&nbsp; > 20 → ZeptoMail automáticamente · ~$2.25 por 10,000 correos</div>
       <div class="brow">
-        <button class="btn btn-p btn-sm" onclick="guardarSP()">Guardar SendPulse</button>
+        <button class="btn btn-p btn-sm" onclick="guardarZepto()">Guardar ZeptoMail</button>
         <span id="sp-msg" style="font-size:12px;color:var(--muted)"></span>
       </div>
     </div>
@@ -301,8 +298,8 @@ textarea{resize:vertical;line-height:1.6}
       <span style="font-size:12px;color:var(--muted);font-weight:500">Servicio:</span>
       <button class="btn btn-sm" id="svc-auto" onclick="setService('auto')" style="background:var(--purple);color:#fff;border:none">Auto</button>
       <button class="btn btn-g btn-sm" id="svc-zoho" onclick="setService('zoho')">Zoho Mail</button>
-      <button class="btn btn-g btn-sm" id="svc-sp" onclick="setService('sendpulse')">SendPulse</button>
-      <span id="svc-info" style="font-size:11px;color:var(--muted)">Auto: usa Zoho ≤20, SendPulse >20</span>
+      <button class="btn btn-g btn-sm" id="svc-sp" onclick="setService('zeptomail')">ZeptoMail</button>
+      <span id="svc-info" style="font-size:11px;color:var(--muted)">Auto: usa Zoho ≤20, ZeptoMail >20</span>
     </div>
     <!-- Botones de acción -->
     <div class="brow">
@@ -324,9 +321,9 @@ textarea{resize:vertical;line-height:1.6}
       <div class="f1">
         <label>Servicio</label>
         <select id="sch-service">
-          <option value="auto">Auto (≤20 Zoho, >20 SendPulse)</option>
+          <option value="auto">Auto (≤20 Zoho, >20 ZeptoMail)</option>
           <option value="zoho">Zoho Mail</option>
-          <option value="sendpulse">SendPulse</option>
+          <option value="zeptomail">ZeptoMail</option>
         </select>
       </div>
       <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:16px;font-size:12px;color:var(--muted)">
@@ -535,7 +532,7 @@ const TIPO_LABELS={masterclass:'Masterclass',bienvenida:'Bienvenida',tarea:'Tare
 const DEFAULT_PROGS=['HackaCYBER SED Bogotá','PGDSI','CiberPolicia','CyberGames','Noticias_ASC','PSDIA'];
 
 let students=[],historial=[],token=null,accountId=null,apiKey=null,currentType='masterclass';
-let credsStatus={zoho:false,sendpulse:false,anthropic:false};
+let credsStatus={zoho:false,sendpulse:false,zeptomail:false,anthropic:false};
 let contentImageUrl='';
 let contentImageB64='';
 let programs=[...DEFAULT_PROGS];
@@ -787,10 +784,10 @@ function selType(t){
 
 function updateMethodInfo(){
   const count=students.filter(s=>s.n&&s.e).length;
-  const spId=credsStatus.sendpulse||localStorage.getItem('mdt_spid')||'';
+  const hasZepto=credsStatus.zeptomail||localStorage.getItem('mdt_zepto')||'';
   const el=document.getElementById('send-method-info');if(!el)return;
   if(count===0){el.textContent='Agrega estudiantes para ver el método de envío';return;}
-  if(count>20&&spId){el.innerHTML=`${count} estudiantes → <strong style="color:var(--green)">SendPulse</strong> (envío masivo)`;}
+  if(count>20&&hasZepto){el.innerHTML=`${count} estudiantes → <strong style="color:var(--green)">ZeptoMail</strong> (envío masivo)`;}
   else{el.innerHTML=`${count} estudiante(s) → <strong style="color:var(--amber)">Zoho Mail</strong>`;}
 }
 
@@ -809,10 +806,10 @@ async function checkCreds(){
     const aiEl    = document.getElementById('ai-setup');
     const wrapper = document.getElementById('setup-wrapper');
     if(zohoEl)  zohoEl.style.display  = d.zoho      ? 'none' : 'block';
-    if(spEl)    spEl.style.display    = d.sendpulse ? 'none' : 'block';
+    if(spEl)    spEl.style.display    = d.zeptomail ? 'none' : 'block';
     if(aiEl)    aiEl.style.display    = d.anthropic ? 'none' : 'block';
     // Mostrar wrapper solo si falta algo
-    const faltaAlgo = !d.zoho || !d.anthropic || !d.sendpulse;
+    const faltaAlgo = !d.zoho || !d.anthropic;
     if(wrapper) wrapper.style.display = faltaAlgo ? 'block' : 'none';
     credsStatus = d;
     updateMethodInfo();
@@ -844,14 +841,18 @@ async function conectarZoho(){
   }catch(e){msg.style.color='var(--red)';msg.textContent='Error: '+e.message;}
 }
 
-async function guardarSP(){
-  const id=document.getElementById('cfg-spid')?.value.trim();
-  const sec=document.getElementById('cfg-spsec')?.value.trim();
+async function guardarZepto(){
+  const key=document.getElementById('cfg-zepto')?.value.trim();
   const msg=document.getElementById('sp-msg');
-  if(!id||!sec){msg.style.color='var(--amber)';msg.textContent='Completa ambos campos.';return;}
+  if(!key){msg.style.color='var(--amber)';msg.textContent='Ingresa la API key.';return;}
   try{
-    const d=await apiPost('/api/save-creds',{sp_client_id:id,sp_client_secret:sec});
-    if(d.ok){msg.style.color='var(--green)';msg.textContent='Guardado.';document.getElementById('sp-setup').style.display='none';updateMethodInfo();}
+    const d=await apiPost('/api/save-creds',{zepto_api_key:key});
+    if(d.ok){
+      localStorage.setItem('mdt_zepto','1');
+      msg.style.color='var(--green)';msg.textContent='Guardado.';
+      document.getElementById('sp-setup').style.display='none';
+      updateMethodInfo();
+    }
     else{msg.style.color='var(--red)';msg.textContent='Error al guardar.';}
   }catch(e){msg.style.color='var(--red)';msg.textContent='Error: '+e.message;}
 }
@@ -872,10 +873,7 @@ function save(){
   localStorage.setItem('mdt_spsec',document.getElementById('cfg-spsec')?.value||'');
 }
 function load(){
-  const spid=localStorage.getItem('mdt_spid')||'';
-  const spsec=localStorage.getItem('mdt_spsec')||'';
-  if(spid){const el=document.getElementById('cfg-spid');if(el)el.value=spid;}
-  if(spsec){const el=document.getElementById('cfg-spsec');if(el)el.value=spsec;}
+  // legacy SendPulse fields kept for compatibility
 }
 
 function switchTab(t,btn){
@@ -966,6 +964,16 @@ async function getSpToken(){
   return d.access_token;
 }
 
+async function sendZeptoMail(toEmail,toName,subject,htmlBody){
+  const textBody=htmlBody.replace(/<style[^>]*>.*?<\/style>/gis,'')
+    .replace(/<[^>]*>/g,'').replace(/\s+/g,' ').trim();
+  const d=await apiPost('/api/zepto-send',{
+    to_email:toEmail, to_name:toName, subject:subject, html:htmlBody, text:textBody
+  });
+  if(d.message==='OK'||d.object==='Email'||(d.data&&d.data[0]?.code==='EM_100'))return true;
+  throw new Error(d.error?.message||d.message||JSON.stringify(d).slice(0,100));
+}
+
 async function sendSendPulse(toEmail,toName,subject,htmlBody){
   // Limpiar texto plano removiendo tags HTML
   const textBody = htmlBody.replace(/<style[^>]*>.*?<\/style>/gis,'')
@@ -1007,18 +1015,18 @@ async function preview(){
 function setSt(id,msg,type){document.getElementById(id).innerHTML=`<div class="st ${type}">${msg}</div>`;}
 function addLog(n,e,ok,det,via){
   const t=new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-  const badge=via==='sp'?'<span class="mb mb-sp">SendPulse</span>':'<span class="mb mb-zoho">Zoho</span>';
+  const badge=via==='zepto'?'<span class="mb mb-sp">ZeptoMail</span>':via==='sp'?'<span class="mb mb-sp">SendPulse</span>':'<span class="mb mb-zoho">Zoho</span>';
   document.getElementById('send-log').innerHTML+=`<div class="lr ${ok?'ok':'err'}"><span class="lt">${t}</span><span>${ok?'Enviado':'Error'} ${badge} → <strong>${n}</strong> &lt;${e}&gt;${det?' — '+det:''}</span></div>`;
   historial.push({t,n,e,ok,det,tipo:currentType,via});
 }
 async function enviar(){
   const valid=students.filter(s=>s.n&&s.e);
   if(!valid.length){setSt('send-st','Agrega al menos un estudiante con nombre y correo.','warn');return;}
-  const spId=credsStatus.sendpulse||localStorage.getItem('mdt_spid')||'';
-  const useSP=spId&&valid.length>20;
+  const hasZepto=credsStatus.zeptomail||localStorage.getItem('mdt_zepto')||'';
+  const useZepto=hasZepto&&valid.length>20;
   const btn=document.getElementById('send-btn');btn.disabled=true;btn.textContent='Enviando...';
   document.getElementById('send-log').innerHTML='';
-  setSt('send-st',`<span class="spin"></span> Procesando ${valid.length} correo(s) via ${useSP?'SendPulse':'Zoho'}...`,'info');
+  setSt('send-st',`<span class="spin"></span> Procesando ${valid.length} correo(s) via ${useZepto?'ZeptoMail':'Zoho'}...`,'info');
   const f=getF();const cfg=TIPOS[currentType];let ok=0,err=0;
   for(const st of valid){
     try{
@@ -1026,13 +1034,13 @@ async function enviar(){
       const bannerUrl=getBannerUrl(prog,currentType);
       const c=await callClaude(cfg.prompt(st,f),bannerUrl,prog);
       const html=buildHTML(st.n,c.cuerpo,bannerUrl,prog);
-      if(useSP){await sendSendPulse(st.e,st.n,c.asunto,html);}
+      if(useZepto){await sendZeptoMail(st.e,st.n,c.asunto,html);}
       else{await sendZoho(st.e,c.asunto,html);}
-      ok++;addLog(st.n,st.e,true,c.asunto,useSP?'sp':'zoho',c.asunto,c.cuerpo);
-    }catch(e){err++;addLog(st.n,st.e,false,e.message?.slice(0,80)||'Error',useSP?'sp':'zoho');}
+      ok++;addLog(st.n,st.e,true,c.asunto,useZepto?'zepto':'zoho',c.asunto,c.cuerpo);
+    }catch(e){err++;addLog(st.n,st.e,false,e.message?.slice(0,80)||'Error',useZepto?'zepto':'zoho');}
   }
   btn.disabled=false;btn.textContent='Enviar a todos';
-  const via=useSP?'SendPulse':'Zoho Mail';
+  const via=useZepto?'ZeptoMail':'Zoho Mail';
   if(err===0)setSt('send-st',`${ok} correo(s) HTML enviados desde support@mdt.edu.pe via ${via}`,'ok');
   else if(ok===0)setSt('send-st','No se pudo enviar ningún correo.','err');
   else setSt('send-st',`${ok} enviados, ${err} con error via ${via}.`,'warn');
@@ -1042,7 +1050,7 @@ function renderHist(){
   const el=document.getElementById('hist');
   if(!historial.length){el.innerHTML='<p style="font-size:13px;color:var(--hint);font-style:italic">Aún no se han enviado correos.</p>';return;}
   el.innerHTML=historial.map(h=>{
-    const badge=h.via==='sp'?'<span class="mb mb-sp">SendPulse</span>':'<span class="mb mb-zoho">Zoho</span>';
+    const badge=h.via==='zepto'?'<span class="mb mb-sp">ZeptoMail</span>':via==='sp'?'<span class="mb mb-sp">SendPulse</span>':'<span class="mb mb-zoho">Zoho</span>';
     return`<div class="lr ${h.ok?'ok':'err'}" style="margin-bottom:7px"><span class="lt">${h.t}</span><span>[${TIPOS[h.tipo]?.label||h.tipo}] ${badge} ${h.ok?'Enviado':'Error'} — <strong>${h.n}</strong> &lt;${h.e}&gt;${h.det?' — '+h.det:''}</span></div>`;
   }).join('');
 }
@@ -1249,7 +1257,7 @@ function setBannerFromSelect(prog,tipo,url){
 function addLog(n,e,ok,det,via,asunto,cuerpo){
   const t=new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
   const ts=new Date().toLocaleDateString('es-PE',{day:'2-digit',month:'2-digit',year:'numeric'})+' '+t;
-  const badge=via==='sp'?'<span class="mb mb-sp">SendPulse</span>':'<span class="mb mb-zoho">Zoho</span>';
+  const badge=via==='zepto'?'<span class="mb mb-sp">ZeptoMail</span>':via==='sp'?'<span class="mb mb-sp">SendPulse</span>':'<span class="mb mb-zoho">Zoho</span>';
   document.getElementById('send-log').innerHTML+=`<div class="lr ${ok?'ok':'err'}"><span class="lt">${t}</span><span>${ok?'Enviado':'Error'} ${badge} — <strong>${n}</strong> &lt;${e}&gt;${det?' — '+det:''}</span></div>`;
   const entry={ts,n,e,ok,det,tipo:currentType,via,asunto:asunto||'',cuerpo:cuerpo||''};
   historialCompleto.push(entry);
@@ -1278,7 +1286,7 @@ function renderHist(){
   if(historialFiltro==='err') entries=entries.filter(h=>!h.ok);
   if(!entries.length){el.innerHTML='<p style="font-size:13px;color:var(--hint);font-style:italic">Sin correos en el historial.</p>';return;}
   el.innerHTML=entries.reverse().map(h=>{
-    const badge=h.via==='sp'?'<span class="mb mb-sp">SendPulse</span>':'<span class="mb mb-zoho">Zoho</span>';
+    const badge=h.via==='zepto'?'<span class="mb mb-sp">ZeptoMail</span>':via==='sp'?'<span class="mb mb-sp">SendPulse</span>':'<span class="mb mb-zoho">Zoho</span>';
     const safeH=encodeURIComponent(JSON.stringify(h));
     const resendBtn=`<button class="resend-btn" onclick="abrirResend(decodeURIComponent('${safeH}'))">↩ Reenviar</button>`;
     return`<div class="lr ${h.ok?'ok':'err'}" style="margin-bottom:8px;flex-direction:column;align-items:flex-start">
@@ -1340,9 +1348,9 @@ function setService(svc){
   });
   const info = document.getElementById('svc-info');
   if(info){
-    if(svc==='auto') info.textContent='Auto: usa Zoho ≤20, SendPulse >20';
+    if(svc==='auto') info.textContent='Auto: usa Zoho ≤20, ZeptoMail >20';
     else if(svc==='zoho') info.textContent='Forzado: siempre Zoho Mail';
-    else info.textContent='Forzado: siempre SendPulse';
+    else info.textContent='Forzado: siempre ZeptoMail';
   }
   updateMethodInfo();
 }
@@ -1406,7 +1414,7 @@ async function cargarProgramados(){
       const dt=new Date(t.scheduled_at).toLocaleString('es-PE',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
       const statusClass={'pending':'prog-status-pending','done':'prog-status-done','error':'prog-status-error'}[t.status]||'';
       const statusLabel={'pending':'⏳ Pendiente','done':'✓ Enviado','error':'✗ Error'}[t.status]||t.status;
-      const svcLabel={'auto':'Auto','zoho':'Zoho','sendpulse':'SendPulse'}[t.service]||t.service;
+      const svcLabel={'auto':'Auto','zoho':'Zoho','zeptomail':'ZeptoMail','sendpulse':'SendPulse'}[t.service]||t.service;
       return`<div class="prog-card-item">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
           <div>
@@ -1433,11 +1441,12 @@ const _origEnviar = window.enviar;
 window.enviar = async function(){
   const valid=students.filter(s=>s.n&&s.e);
   if(!valid.length){setSt('send-st','Agrega al menos un estudiante con nombre y correo.','warn');return;}
-  const useSP = selectedService==='sendpulse' ||
-    (selectedService==='auto' && credsStatus.sendpulse && valid.length>20);
+  const hasZepto2=credsStatus.zeptomail||localStorage.getItem('mdt_zepto')||'';
+  const useZepto2 = selectedService==='zeptomail' ||
+    (selectedService==='auto' && hasZepto2 && valid.length>20);
   const btn=document.getElementById('send-btn');btn.disabled=true;btn.textContent='Enviando...';
   document.getElementById('send-log').innerHTML='';
-  const via=useSP?'SendPulse':'Zoho Mail';
+  const via=useZepto2?'ZeptoMail':'Zoho Mail';
   setSt('send-st',`<span class="spin"></span> Procesando ${valid.length} correo(s) via ${via}...`,'info');
   const f=getF();const cfg=TIPOS[currentType];let ok=0,err=0;
   for(const st of valid){
@@ -1446,10 +1455,10 @@ window.enviar = async function(){
       const bannerUrl=getBannerUrl(prog,currentType);
       const c=await callClaude(cfg.prompt(st,f),bannerUrl,prog);
       const htmlBody=buildHTML(st.n,c.cuerpo,bannerUrl,prog,{...c,contentImg:getContentImgUrl()});
-      if(useSP){await sendSendPulse(st.e,st.n,c.asunto,htmlBody);}
+      if(useZepto2){await sendZeptoMail(st.e,st.n,c.asunto,htmlBody);}
       else{await sendZoho(st.e,c.asunto,htmlBody);}
-      ok++;addLog(st.n,st.e,true,c.asunto,useSP?'sp':'zoho',c.asunto,c.cuerpo);
-    }catch(e){err++;addLog(st.n,st.e,false,e.message?.slice(0,80)||'Error',useSP?'sp':'zoho','','');}
+      ok++;addLog(st.n,st.e,true,c.asunto,useZepto2?'zepto':'zoho',c.asunto,c.cuerpo);
+    }catch(e){err++;addLog(st.n,st.e,false,e.message?.slice(0,80)||'Error',useZepto2?'zepto':'zoho','','');}
   }
   btn.disabled=false;btn.textContent='Enviar ahora';
   if(err===0)setSt('send-st',`${ok} correo(s) enviados via ${via}`,'ok');
