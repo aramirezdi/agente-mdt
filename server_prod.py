@@ -30,6 +30,7 @@ def load_creds():
     for key in ["zoho_client_id","zoho_client_secret","zoho_refresh_token",
                 "zoho_access_token","zoho_account_id","sp_client_id",
                 "sp_client_secret","anthropic_key","wa_token","wa_phone_id","wa_waba_id",
+                "wati_endpoint","wati_token",
                 "zepto_api_key"]:
         val = os.environ.get(key.upper(),"")
         if val: env_creds[key] = val
@@ -445,7 +446,9 @@ class Handler(BaseHTTPRequestHandler):
         if p.get("sp_api_key"):    creds["sp_api_key"]    = p["sp_api_key"]
         if p.get("sp_client_id"):  creds["sp_client_id"]  = p["sp_client_id"]
         if p.get("sp_client_secret"): creds["sp_client_secret"] = p["sp_client_secret"]
-        if p.get("zepto_api_key"): creds["zepto_api_key"] = p["zepto_api_key"]
+        if p.get("zepto_api_key"):   creds["zepto_api_key"]   = p["zepto_api_key"]
+        if p.get("wati_endpoint"):   creds["wati_endpoint"]   = p["wati_endpoint"].rstrip("/")
+        if p.get("wati_token"):      creds["wati_token"]      = p["wati_token"]
         save_creds(creds)
         self.send_json({"ok":True})
 
@@ -704,47 +707,33 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json({"error":str(e)})
 
 
-    # ── WhatsApp Business API ──
+    # ── WhatsApp via WATI ──
     def _wa_send(self, p):
-        creds = load_creds()
-        token    = p.get("token") or creds.get("wa_token","")
-        phone_id = p.get("phone_id") or creds.get("wa_phone_id","")
+        creds    = load_creds()
+        endpoint = creds.get("wati_endpoint","").rstrip("/")
+        token    = creds.get("wati_token","")
         to       = p.get("to","").replace("+","").replace(" ","").replace("-","")
         msg_type = p.get("type","text")
-        if not token or not phone_id or not to:
-            self.send_json({"error":"Faltan credenciales de WhatsApp o número destino."}); return
-        # Construir payload según tipo
+        if not endpoint or not token or not to:
+            self.send_json({"error":"Faltan credenciales WATI (endpoint/token) o número destino."}); return
+        headers = {"Content-Type":"application/json","Authorization":f"Bearer {token}"}
         if msg_type == "template":
             payload = {
-                "messaging_product": "whatsapp",
-                "to": to,
-                "type": "template",
-                "template": {
-                    "name": p.get("template_name","hello_world"),
-                    "language": {"code": p.get("lang","es_MX")},
-                    "components": p.get("components",[])
-                }
+                "template_name": p.get("template_name","hello_world"),
+                "broadcast_name": p.get("broadcast_name","mdt_broadcast"),
+                "parameters": p.get("parameters",[])
             }
+            r = self._req(f"{endpoint}/api/v1/sendTemplateMessage?whatsappNumber={to}", payload, headers)
         else:
-            payload = {
-                "messaging_product": "whatsapp",
-                "to": to,
-                "type": "text",
-                "text": {"body": p.get("message","Hola desde MDT")}
-            }
-        r = self._req(
-            f"https://graph.facebook.com/v21.0/{phone_id}/messages",
-            payload,
-            {"Content-Type":"application/json","Authorization":f"Bearer {token}"}
-        )
+            payload = {"message": p.get("message","Hola desde MDT")}
+            r = self._req(f"{endpoint}/api/v1/sendSessionMessage/{to}", payload, headers)
         self.send_json(r)
 
     def _wa_status(self, p):
         creds = load_creds()
         self.send_json({
-            "configured": bool(creds.get("wa_token") and creds.get("wa_phone_id")),
-            "phone_id": creds.get("wa_phone_id",""),
-            "waba_id": creds.get("wa_waba_id","")
+            "configured": bool(creds.get("wati_endpoint") and creds.get("wati_token")),
+            "endpoint": creds.get("wati_endpoint",""),
         })
 
 # ── Scheduler en background ──
