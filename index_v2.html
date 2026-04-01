@@ -1340,10 +1340,10 @@ async function confirmarReenvio(){
 let selectedService = 'auto';
 function setService(svc){
   selectedService = svc;
-  ['auto','zoho','sp'].forEach(s=>{
+  ['auto','zoho','zeptomail'].forEach(s=>{
     const btn = document.getElementById('svc-'+s);
     if(btn){
-      btn.className = 'btn btn-sm' + (s===svc||('sendpulse'===svc&&s==='sp') ? ' svc-btn-active' : ' btn-g');
+      btn.className = 'btn btn-sm' + (s===svc ? ' svc-btn-active' : ' btn-g');
     }
   });
   const info = document.getElementById('svc-info');
