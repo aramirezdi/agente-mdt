@@ -550,10 +550,11 @@ class Handler(BaseHTTPRequestHandler):
             "htmlbody": html,
             "textbody": text
         }
+        auth = api_key if api_key.startswith("Zoho-enczapikey") else f"Zoho-enczapikey {api_key}"
         r = self._req(
             "https://api.zeptomail.com/v1.1/email",
             payload,
-            {"Content-Type":"application/json","Authorization":f"Zoho-enczapikey {api_key}"}
+            {"Content-Type":"application/json","Authorization":auth}
         )
         print(f"  Zepto response: {str(r)[:300]}")
         self.send_json(r)
@@ -836,8 +837,9 @@ def execute_scheduled_task(task):
                     "htmlbody": cuerpo,
                     "textbody": text_body
                 }
+                zepto_auth = zepto_key if zepto_key.startswith("Zoho-enczapikey") else f"Zoho-enczapikey {zepto_key}"
                 _req_static("https://api.zeptomail.com/v1.1/email", zp,
-                    {"Content-Type":"application/json","Authorization":f"Zoho-enczapikey {zepto_key}"})
+                    {"Content-Type":"application/json","Authorization":zepto_auth})
             else:
                 zoho_token, acc_id = get_zoho_token()
                 if not zoho_token:
