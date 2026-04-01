@@ -505,14 +505,18 @@ class Handler(BaseHTTPRequestHandler):
     def _sp_send(self, p):
         creds = load_creds()
         print(f"  SP send - sp_id: {bool(creds.get('sp_client_id'))}, sp_sec: {bool(creds.get('sp_client_secret'))}")
+        msg = p.get("message") or {}
+        html_len = len(msg.get("html") or "")
+        text_len = len(msg.get("text") or "")
+        print(f"  SP msg keys: {list(msg.keys())}")
+        print(f"  SP html_len: {html_len}, text_len: {text_len}")
+        if html_len > 0:
+            print(f"  SP html inicio: {(msg.get('html') or '')[:80]}")
         token = get_sp_token()
         print(f"  SP token obtenido: {bool(token)}")
         if not token:
             self.send_json({"error":"SendPulse no configurado o error al obtener token."}); return
         auth_header = f"Bearer {token}"
-        msg = p.get("message")
-        print(f"  SP msg keys: {list(msg.keys()) if isinstance(msg, dict) else type(msg)}")
-        print(f"  SP html inicio: {repr(str(msg.get('html',''))[:80]) if isinstance(msg, dict) else 'NO DICT'}")
         r = self._req(
             "https://api.sendpulse.com/smtp/emails",
             {"email": msg},
