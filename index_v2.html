@@ -559,12 +559,18 @@ const TIPOS={
     <div class="f1"><label>Link de entrega (opcional)</label><input id="f-link" placeholder="https://campus.mdt.edu.pe/entrega"/></div>
     <div class="f1"><label>Instrucciones adicionales</label><textarea id="f-inst" rows="2" placeholder="Ej: Adjuntar en PDF."></textarea></div>`,
     prompt(st,f){return`Correo HTML recordatorio de entrega de tarea.\nEstudiante: ${st.n} | Programa: ${st.p||f.prog} | Tarea: ${f.nom}\nFecha límite: ${fmt(f.fecha)} ${f.hora?'a las '+f.hora:''} ${f.link?'| Link: '+f.link:''} ${f.inst?'| Notas: '+f.inst:''}`}},
-  seguimiento:{label:'Seguimiento',title:'Datos del seguimiento',cols:['Nombre','Correo','Programa','Progreso (%)'],
-    fields:`<div class="g2f"><div><label>Programa</label><select id="f-prog-sel" onchange="document.getElementById('f-prog').value=this.value"></select></div><div><label>Módulo actual</label><input id="f-nom" placeholder="Módulo 3"/></div></div>
-    <input type="hidden" id="f-prog"/>
-    <div class="g2f"><div><label>Semanas activo</label><input id="f-semanas" type="number" placeholder="4" min="1"/></div><div><label>Situación</label><select id="f-situacion"><option value="va bien">Va bien, reforzar motivación</option><option value="inactivo">Inactivo, necesita reactivación</option><option value="atrasado">Atrasado en módulos</option><option value="destacado">Destacado, felicitarlo</option></select></div></div>
-    <div class="f1"><label>Notas</label><textarea id="f-inst" rows="2" placeholder="Ej: No completó ejercicios del módulo 2."></textarea></div>`,
-    prompt(st,f){return`Correo HTML de seguimiento y monitoreo de progreso.\nEstudiante: ${st.n} | Programa: ${st.p||f.prog} | Módulo: ${f.nom}\nSemanas: ${f.semanas||'?'} | Progreso: ${st.extra||'no especificado'}% | Situación: ${f.situacion} ${f.inst?'| Notas: '+f.inst:''}`}},
+  seguimiento:{label:'Seguimiento',title:'Datos del seguimiento',cols:['Nombre','Correo','Programa','Módulo','% Avance','Pendientes','Últ. acceso','Fecha fin'],
+    fields:`<div class="g2f"><div><label>Programa (si no viene del Excel)</label><select id="f-prog-sel" onchange="document.getElementById('f-prog').value=this.value"></select></div><div><label>Notas adicionales</label><input id="f-inst" placeholder="Ej: Grupo avanzado"/></div></div>
+    <input type="hidden" id="f-prog"/>`,
+    prompt(st,f){
+      const avance=parseFloat(st.avance||st.extra||0);
+      const diasRestantes=(()=>{if(!st.fecha_fin)return null;const hoy=new Date();const fin=new Date(st.fecha_fin);const d=Math.ceil((fin-hoy)/(1000*60*60*24));return d>0?d:0;})();
+      const diasTexto=diasRestantes!==null?` | Días restantes: ${diasRestantes}`:'';
+      let tono,instruccion;
+      if(avance>=70){tono='MOTIVACIONAL — sprint final';instruccion='Tono celebratorio y motivador. Están muy cerca de terminar. Énfasis en el logro que están a punto de alcanzar.';}
+      else if(avance>=30){tono='ALERTA AMABLE — recordar que el tiempo avanza';instruccion='Tono amigable pero directo. Recordar que el programa avanza y es importante mantener el ritmo. Sin alarmismo.';}
+      else{tono='URGENCIA — riesgo de quedarse atrás';instruccion='Tono de urgencia respetuosa. El estudiante está en riesgo crítico. Mencionar los días restantes y las tareas pendientes. Llamada clara a la acción.';}
+      return`Correo HTML de seguimiento de progreso.\nEstudiante: ${st.n} | Programa: ${st.p||f.prog} | Módulo actual: ${st.modulo||'no especificado'}\nAvance: ${avance}%${diasTexto} | Tareas pendientes: ${st.pendientes||'no especificadas'} | Último acceso: ${st.ultimo_acceso||'desconocido'}\nTONO REQUERIDO: ${tono}\nInstrucciones: ${instruccion}${f.inst?' | Notas: '+f.inst:''}`}},
   certificado:{label:'Certificado',title:'Datos del certificado',cols:['Nombre','Correo','Programa'],
     fields:`<div class="g2f"><div><label>Módulo o programa completado</label><input id="f-nom" placeholder="Módulo 4 — Ethical Hacking"/></div><div><label>Programa</label><select id="f-prog-sel" onchange="document.getElementById('f-prog').value=this.value"></select></div></div>
     <input type="hidden" id="f-prog"/>
@@ -906,7 +912,7 @@ function renderSt(){
 }
 function importar(){
   const raw=document.getElementById('paste').value.trim();if(!raw)return;let c=0;
-  raw.split('\n').filter(l=>l.trim()).forEach(line=>{const cols=line.split('\t');if(cols.length>=2){students.push({id:Date.now()+Math.random(),n:cols[0]?.trim()||'',e:cols[1]?.trim()||'',p:cols[2]?.trim()||'',extra:cols[3]?.trim()||''});c++;}});
+  raw.split('\n').filter(l=>l.trim()).forEach(line=>{const cols=line.split('\t');if(cols.length>=2){students.push({id:Date.now()+Math.random(),n:cols[0]?.trim()||'',e:cols[1]?.trim()||'',p:cols[2]?.trim()||'',modulo:cols[3]?.trim()||'',avance:cols[4]?.trim()||'',pendientes:cols[5]?.trim()||'',ultimo_acceso:cols[6]?.trim()||'',fecha_fin:cols[7]?.trim()||'',extra:cols[4]?.trim()||''});c++;}});
   document.getElementById('paste').value='';renderSt();updateMethodInfo();
   if(c)setSt('send-st',`${c} estudiante(s) importados.`,'ok');
 }
