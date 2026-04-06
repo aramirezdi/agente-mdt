@@ -258,7 +258,10 @@ textarea{resize:vertical;line-height:1.6}
   </div>
 
   <div class="card">
-    <div class="card-ttl">Estudiantes a notificar</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <span class="card-ttl" style="margin:0">Estudiantes a notificar <span id="st-count" style="color:var(--purple);font-weight:700"></span></span>
+      <button class="btn btn-red btn-sm" id="clear-all-btn" onclick="limpiarEstudiantes()" style="display:none">✕ Limpiar todo</button>
+    </div>
     <div class="st-hdr" id="st-hdr"></div>
     <div id="st-list"></div>
     <button class="add-lnk" onclick="addSt()">+ Agregar estudiante</button>
@@ -334,9 +337,20 @@ textarea{resize:vertical;line-height:1.6}
       </div>
       <p style="font-size:11px;color:var(--muted);margin-top:6px">Claude generará correos distintos para cada grupo. Compara tasas de apertura en el Dashboard.</p>
     </div>
+    <!-- Envío de prueba -->
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:10px">
+      <p style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:8px">Envío de prueba</p>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <label style="font-size:12px;color:var(--muted)">Enviar solo a los primeros</label>
+        <input type="number" id="test-count" value="3" min="1" style="width:60px;padding:5px 8px;font-size:13px"/>
+        <label style="font-size:12px;color:var(--muted)">estudiante(s)</label>
+        <button class="btn btn-g btn-sm" onclick="enviarPrueba()">🧪 Envío de prueba</button>
+      </div>
+      <p style="font-size:11px;color:var(--hint);margin-top:6px">Envía a los primeros N estudiantes de la lista para verificar antes de enviar a todos.</p>
+    </div>
     <!-- Botones de acción -->
     <div class="brow">
-      <button class="btn btn-p" id="send-btn" onclick="enviar()">Enviar ahora</button>
+      <button class="btn btn-p" id="send-btn" onclick="enviar()">Enviar a todos</button>
       <button class="btn btn-g" onclick="abrirProgramar()">🕐 Programar envío</button>
     </div>
     <div id="send-st"></div>
@@ -964,12 +978,21 @@ function switchTab(t,btn){
 // ── Estudiantes ──
 function addSt(n='',e='',p='',x=''){students.push({id:Date.now()+Math.random(),n,e,p,extra:x});renderSt();updateMethodInfo();}
 function rmSt(id){students=students.filter(s=>s.id!=id);renderSt();updateMethodInfo();}
+function limpiarEstudiantes(){
+  if(!confirm(`¿Eliminar los ${students.length} estudiantes cargados?`)) return;
+  students=[];renderSt();updateMethodInfo();
+  setSt('send-st','Lista de estudiantes limpiada.','info');
+}
 function updSt(id,f,v){const s=students.find(x=>x.id==id);if(s)s[f]=v;updateMethodInfo();}
 function esc(s){return(s||'').replace(/"/g,'&quot;').replace(/</g,'&lt;');}
 function renderSt(){
   const el=document.getElementById('st-list');
   const hasX=TIPOS[currentType].cols.length>3;
   const gc=hasX?'1fr 1.2fr 0.8fr 0.6fr 0.7fr 26px':'1fr 1.2fr 0.8fr 0.7fr 26px';
+  const countEl=document.getElementById('st-count');
+  const clearBtn=document.getElementById('clear-all-btn');
+  if(countEl) countEl.textContent=students.length?`(${students.length})`:'';
+  if(clearBtn) clearBtn.style.display=students.length>1?'inline-flex':'none';
   if(!students.length){el.innerHTML='<p style="font-size:12px;color:var(--hint);font-style:italic;margin-bottom:7px">Sin estudiantes aún.</p>';return;}
   el.innerHTML=students.map(s=>`<div class="st-row" style="grid-template-columns:${gc}">
     <input value="${esc(s.n)}" placeholder="Nombre" oninput="updSt('${s.id}','n',this.value)"/>
@@ -1093,6 +1116,20 @@ function addLog(n,e,ok,det,via){
   const badge=via==='zepto'?'<span class="mb mb-sp">ZeptoMail</span>':via==='sp'?'<span class="mb mb-sp">SendPulse</span>':'<span class="mb mb-zoho">Zoho</span>';
   document.getElementById('send-log').innerHTML+=`<div class="lr ${ok?'ok':'err'}"><span class="lt">${t}</span><span>${ok?'Enviado':'Error'} ${badge} → <strong>${n}</strong> &lt;${e}&gt;${det?' — '+det:''}</span></div>`;
   historial.push({t,n,e,ok,det,tipo:currentType,via});
+}
+async function enviarPrueba(){
+  const n=parseInt(document.getElementById('test-count')?.value||'3',10);
+  const valid=students.filter(s=>s.n&&s.e);
+  if(!valid.length){setSt('send-st','No hay estudiantes cargados.','warn');return;}
+  const muestra=valid.slice(0,Math.min(n,valid.length));
+  if(!confirm(`¿Enviar correo de prueba a los primeros ${muestra.length} estudiante(s)?\n${muestra.map(s=>`• ${s.n} <${s.e}>`).join('\n')}`)) return;
+  // Usar la misma lógica de enviar() pero solo con la muestra
+  const orig=students;
+  students=muestra;
+  setSt('send-st',`<span class="spin"></span> Enviando prueba a ${muestra.length} estudiante(s)...`,'info');
+  await enviar();
+  students=orig;
+  renderSt();
 }
 function toggleAB(){
   const on=document.getElementById('ab-active').checked;
