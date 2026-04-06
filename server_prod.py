@@ -357,6 +357,80 @@ class Handler(BaseHTTPRequestHandler):
             else:
                 self.send_json({"error":"Banner no encontrado"},404)
             return
+        # ── Tracking pixel apertura ──
+        if path.startswith("/track/open/"):
+            track_id = path.replace("/track/open/","").split("/")[0]
+            try:
+                if os.path.exists(HISTORY_FILE):
+                    with open(HISTORY_FILE,"r") as f:
+                        entries = json.load(f)
+                    for entry in entries:
+                        if entry.get("track_id") == track_id and not entry.get("opened"):
+                            entry["opened"] = True
+                            entry["opened_at"] = datetime.now().isoformat()
+                            break
+                    with open(HISTORY_FILE,"w") as f:
+                        json.dump(entries, f, ensure_ascii=False)
+            except: pass
+            gif = base64.b64decode("R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7")
+            self.send_response(200)
+            self.send_header("Content-Type","image/gif")
+            self.send_header("Content-Length",str(len(gif)))
+            self.send_header("Cache-Control","no-cache, no-store")
+            self.end_headers()
+            self.wfile.write(gif)
+            return
+        # ── Stats / Dashboard ──
+        if path == "/api/stats":
+            token = self.headers.get("X-Session-Token","")
+            if not get_session(token):
+                self.send_json({"error":"Sesion invalida"},401); return
+            entries = []
+            if os.path.exists(HISTORY_FILE):
+                try:
+                    with open(HISTORY_FILE,"r") as f:
+                        entries = json.load(f)
+                except: pass
+            total  = len(entries)
+            sent   = sum(1 for e in entries if e.get("ok"))
+            errors = total - sent
+            opened = sum(1 for e in entries if e.get("opened"))
+            by_prog = {}
+            for e in entries:
+                prog = e.get("prog") or "(sin programa)"
+                if prog not in by_prog: by_prog[prog] = {"sent":0,"err":0,"opened":0}
+                if e.get("ok"):      by_prog[prog]["sent"]   += 1
+                else:                by_prog[prog]["err"]    += 1
+                if e.get("opened"): by_prog[prog]["opened"]  += 1
+            by_tipo = {}
+            for e in entries:
+                tipo = e.get("tipo") or "(sin tipo)"
+                if tipo not in by_tipo: by_tipo[tipo] = {"sent":0,"err":0,"opened":0}
+                if e.get("ok"):      by_tipo[tipo]["sent"]   += 1
+                else:                by_tipo[tipo]["err"]    += 1
+                if e.get("opened"): by_tipo[tipo]["opened"]  += 1
+            by_via = {}
+            for e in entries:
+                via = e.get("via","zoho")
+                if via not in by_via: by_via[via] = 0
+                if e.get("ok"): by_via[via] += 1
+            ab = {"A":{"sent":0,"opened":0},"B":{"sent":0,"opened":0}}
+            for e in entries:
+                g = e.get("ab_group","")
+                if g in ("A","B"):
+                    if e.get("ok"):      ab[g]["sent"]   += 1
+                    if e.get("opened"):  ab[g]["opened"] += 1
+            timeline = {}
+            for e in entries:
+                if e.get("ok") and e.get("ts"):
+                    day = e["ts"][:10]
+                    timeline[day] = timeline.get(day,0) + 1
+            self.send_json({
+                "total":total,"sent":sent,"errors":errors,"opened":opened,
+                "by_prog":by_prog,"by_tipo":by_tipo,"by_via":by_via,
+                "ab":ab,"timeline":dict(sorted(timeline.items())[-14:])
+            })
+            return
         self.send_json({"error":"Not found"},404)
 
     def do_POST(self):
@@ -789,14 +863,17 @@ def execute_scheduled_task(task):
     ok_count  = 0
     err_count = 0
     history   = []
+    server_url = os.environ.get("RAILWAY_PUBLIC_DOMAIN","")
+    if server_url: server_url = f"https://{server_url}"
+    else: server_url = creds.get("server_url","")
     for st in students:
         try:
             # Llamar a Claude
-            tipo_val=task.get("tipo","comunicacion");nombre_val=st.get("n","");prog_val=st.get("p","");ev_nombre=evento.get("nombre","");ev_fecha=evento.get("fecha","");ev_hora=evento.get("hora","");ev_link=evento.get("link","")
             tipo_val=task.get("tipo","comunicacion")
             nombre_val=st.get("n",""); prog_val=st.get("p","")
             ev_nombre=evento.get("nombre",""); ev_fecha=evento.get("fecha","")
             ev_hora=evento.get("hora",""); ev_link=evento.get("link","")
+            ab_group=st.get("ab_group","")
             prompt = ("Correo de "+tipo_val+" para estudiante: "+nombre_val
                      +" | Programa: "+prog_val+" | Evento: "+ev_nombre
                      +" | Fecha: "+ev_fecha+" | Hora: "+ev_hora+" | Link: "+ev_link
@@ -812,6 +889,11 @@ def execute_scheduled_task(task):
             correo = json.loads(text)
             asunto = correo.get("asunto","Sin asunto")
             cuerpo = correo.get("cuerpo","")
+            # Tracking pixel
+            track_id = secrets.token_urlsafe(12)
+            if server_url:
+                pixel = f'<img src="{server_url}/track/open/{track_id}" width="1" height="1" style="display:none" alt=""/>'
+                cuerpo = cuerpo + pixel if "</body>" not in cuerpo else cuerpo.replace("</body>", pixel+"</body>",1)
             # Enviar
             zepto_key = creds.get("zepto_api_key","")
             use_zepto = (service == "zeptomail") or (service == "auto" and zepto_key and len(students) > 20)
@@ -838,10 +920,10 @@ def execute_scheduled_task(task):
                 _req_static(f"https://mail.zoho.com/api/accounts/{acc_id}/messages",payload,
                     {"Content-Type":"application/json","Authorization":f"Zoho-oauthtoken {zoho_token}"})
             ok_count += 1
-            history.append({"ts":datetime.now().isoformat(),"n":st.get("n",""),"e":st.get("e",""),"ok":True,"asunto":asunto,"tipo":task.get("tipo",""),"via":"zepto" if use_zepto else "zoho"})
+            history.append({"ts":datetime.now().isoformat(),"n":st.get("n",""),"e":st.get("e",""),"prog":prog_val,"ok":True,"asunto":asunto,"tipo":task.get("tipo",""),"via":"zepto" if use_zepto else "zoho","track_id":track_id,"opened":False,"ab_group":ab_group})
         except Exception as e:
             err_count += 1
-            history.append({"ts":datetime.now().isoformat(),"n":st.get("n",""),"e":st.get("e",""),"ok":False,"det":str(e),"tipo":task.get("tipo",""),"via":service})
+            history.append({"ts":datetime.now().isoformat(),"n":st.get("n",""),"e":st.get("e",""),"prog":st.get("p",""),"ok":False,"det":str(e),"tipo":task.get("tipo",""),"via":service,"track_id":"","opened":False,"ab_group":ab_group})
     # Guardar historial
     if history:
         existing = []

@@ -90,6 +90,29 @@ textarea{resize:vertical;line-height:1.6}
 .from-info small{font-size:12px;color:var(--muted);display:block;margin-top:2px}
 .conn-ok{display:none;align-items:center;gap:8px;padding:9px 13px;background:var(--green-bg);border:1px solid var(--green-border);border-radius:7px;color:var(--green);font-size:13px;margin-top:10px}
 .conn-ok.show{display:flex}
+/* Dashboard */
+.dash-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.dash-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px 20px}
+.dash-card .dc-label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px}
+.dash-card .dc-val{font-size:28px;font-weight:700;color:var(--text);letter-spacing:-1px}
+.dash-card .dc-sub{font-size:12px;color:var(--muted);margin-top:3px}
+.dash-card.accent-green{border-color:var(--green-border);background:var(--green-bg)}.dash-card.accent-green .dc-val{color:var(--green)}
+.dash-card.accent-red{border-color:var(--red-border);background:var(--red-bg)}.dash-card.accent-red .dc-val{color:var(--red)}
+.dash-card.accent-purple{border-color:var(--purple-border);background:var(--purple-bg)}.dash-card.accent-purple .dc-val{color:var(--purple)}
+.bar-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:12px}
+.bar-label{width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text);flex-shrink:0}
+.bar-track{flex:1;background:var(--surface2);border-radius:4px;height:8px;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px;transition:width .4s}
+.bar-count{width:36px;text-align:right;color:var(--muted);flex-shrink:0}
+.ab-table{width:100%;border-collapse:collapse;font-size:13px}
+.ab-table th{text-align:left;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;padding:0 0 8px}
+.ab-table td{padding:6px 0;border-top:1px solid var(--border)}
+.tl-bar-row{display:flex;align-items:flex-end;gap:3px;height:60px;margin-top:8px}
+.tl-bar{flex:1;background:var(--purple);border-radius:3px 3px 0 0;min-height:2px;transition:height .3s}
+.tl-label{display:flex;gap:3px;margin-top:4px}
+.tl-label span{flex:1;font-size:9px;color:var(--hint);text-align:center}
+.ab-toggle{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;cursor:pointer;margin-bottom:10px}
+.ab-toggle input{width:auto;accent-color:var(--purple)}
 
 /* Banners */
 .prog-card{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:12px}
@@ -183,6 +206,7 @@ textarea{resize:vertical;line-height:1.6}
   <button class="tab" onclick="switchTab('banners',this)">Banners</button>
   <button class="tab" onclick="switchTab('programados',this)">🕐 Programados</button>
   <button class="tab" onclick="switchTab('historial',this)">Historial</button>
+  <button class="tab" onclick="switchTab('dashboard',this)">📊 Dashboard</button>
 </div>
 
 <!-- TAB Envío -->
@@ -300,6 +324,15 @@ textarea{resize:vertical;line-height:1.6}
       <button class="btn btn-g btn-sm" id="svc-zoho" onclick="setService('zoho')">Zoho Mail</button>
       <button class="btn btn-g btn-sm" id="svc-zeptomail" onclick="setService('zeptomail')">ZeptoMail</button>
       <span id="svc-info" style="font-size:11px;color:var(--muted)">Auto: usa Zoho ≤20, ZeptoMail >20</span>
+    </div>
+    <!-- Prueba A/B -->
+    <label class="ab-toggle"><input type="checkbox" id="ab-active" onchange="toggleAB()"/> <span style="font-size:13px;font-weight:500">Activar Prueba A/B</span> <span style="font-size:11px;color:var(--muted)">— divide estudiantes en 2 grupos con instrucciones distintas</span></label>
+    <div id="ab-fields" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:10px">
+      <div class="g2f">
+        <div><label style="color:var(--green)">Instrucción Grupo A (50%)</label><textarea id="ab-inst-a" rows="2" placeholder="Ej: Usa un tono muy motivador y urgente"></textarea></div>
+        <div><label style="color:var(--purple)">Instrucción Grupo B (50%)</label><textarea id="ab-inst-b" rows="2" placeholder="Ej: Usa un tono amigable y cercano, sin presión"></textarea></div>
+      </div>
+      <p style="font-size:11px;color:var(--muted);margin-top:6px">Claude generará correos distintos para cada grupo. Compara tasas de apertura en el Dashboard.</p>
     </div>
     <!-- Botones de acción -->
     <div class="brow">
@@ -495,6 +528,40 @@ textarea{resize:vertical;line-height:1.6}
   </div>
 </div>
 
+<!-- TAB Dashboard -->
+<div id="tab-dashboard" class="sec">
+  <div class="dash-grid" id="dash-cards">
+    <div class="dash-card"><div class="dc-label">Total enviados</div><div class="dc-val" id="dc-sent">—</div><div class="dc-sub" id="dc-sent-sub"></div></div>
+    <div class="dash-card accent-green"><div class="dc-label">Tasa de éxito</div><div class="dc-val" id="dc-ok">—</div><div class="dc-sub" id="dc-ok-sub"></div></div>
+    <div class="dash-card accent-red"><div class="dc-label">Errores</div><div class="dc-val" id="dc-err">—</div><div class="dc-sub" id="dc-err-sub"></div></div>
+    <div class="dash-card accent-purple"><div class="dc-label">Tasa de apertura</div><div class="dc-val" id="dc-open">—</div><div class="dc-sub" id="dc-open-sub"></div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+    <div class="card">
+      <div class="card-ttl">Por programa</div>
+      <div id="dash-prog"></div>
+    </div>
+    <div class="card">
+      <div class="card-ttl">Por tipo de correo</div>
+      <div id="dash-tipo"></div>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+    <div class="card">
+      <div class="card-ttl">Actividad — últimos 14 días</div>
+      <div id="dash-timeline-bars" class="tl-bar-row"></div>
+      <div id="dash-timeline-labels" class="tl-label"></div>
+    </div>
+    <div class="card">
+      <div class="card-ttl">Prueba A/B</div>
+      <div id="dash-ab"></div>
+    </div>
+  </div>
+  <div style="text-align:right;margin-bottom:8px">
+    <button class="btn btn-g btn-sm" onclick="loadDashboard()">↻ Actualizar</button>
+  </div>
+</div>
+
 <!-- Modal reenvío -->
 <div id="resend-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:999;align-items:center;justify-content:center">
   <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;max-width:440px;width:90%;max-height:80vh;overflow-y:auto">
@@ -641,6 +708,7 @@ function buildHTML(studentName, bodyText, bannerUrl, programa, extraData){
     </tr></table>
   </td></tr>`;
 
+  const trackPixel = extraData.trackId ? `<img src="${BASE}/track/open/${extraData.trackId}" width="1" height="1" style="display:none" alt=""/>` : '';
   return `<!DOCTYPE html>
 <html lang="es"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/></head>
 <body style="margin:0;padding:0;background:#f0f4f8;font-family:'Helvetica Neue',Arial,sans-serif;">
@@ -682,7 +750,7 @@ function buildHTML(studentName, bodyText, bannerUrl, programa, extraData){
 </table>
 </td></tr>
 </table>
-</body></html>`;
+${trackPixel}</body></html>`;
 }
 
 // ── Banners tab ──
@@ -890,6 +958,7 @@ function switchTab(t,btn){
   if(t==='programados') cargarProgramados();
   if(t==='historial') renderHist();
   if(t==='whatsapp') initWA();
+  if(t==='dashboard') loadDashboard();
 }
 
 // ── Estudiantes ──
@@ -1025,6 +1094,10 @@ function addLog(n,e,ok,det,via){
   document.getElementById('send-log').innerHTML+=`<div class="lr ${ok?'ok':'err'}"><span class="lt">${t}</span><span>${ok?'Enviado':'Error'} ${badge} → <strong>${n}</strong> &lt;${e}&gt;${det?' — '+det:''}</span></div>`;
   historial.push({t,n,e,ok,det,tipo:currentType,via});
 }
+function toggleAB(){
+  const on=document.getElementById('ab-active').checked;
+  document.getElementById('ab-fields').style.display=on?'block':'none';
+}
 async function enviar(){
   const valid=students.filter(s=>s.n&&s.e);
   if(!valid.length){setSt('send-st','Agrega al menos un estudiante con nombre y correo.','warn');return;}
@@ -1034,16 +1107,24 @@ async function enviar(){
   document.getElementById('send-log').innerHTML='';
   setSt('send-st',`<span class="spin"></span> Procesando ${valid.length} correo(s) via ${useZepto?'ZeptoMail':'Zoho'}...`,'info');
   const f=getF();const cfg=TIPOS[currentType];let ok=0,err=0;
-  for(const st of valid){
+  const abActive=document.getElementById('ab-active')?.checked;
+  const abInstA=document.getElementById('ab-inst-a')?.value||'';
+  const abInstB=document.getElementById('ab-inst-b')?.value||'';
+  for(let i=0;i<valid.length;i++){
+    const st=valid[i];
     try{
       const prog=st.p||f.prog||programs[0]||'';
       const bannerUrl=getBannerUrl(prog,currentType);
-      const c=await callClaude(cfg.prompt(st,f),bannerUrl,prog);
-      const html=buildHTML(st.n,c.cuerpo,bannerUrl,prog);
+      const abGroup=abActive?(i%2===0?'A':'B'):'';
+      const abInst=abGroup==='A'?abInstA:abGroup==='B'?abInstB:'';
+      const promptFinal=abInst?cfg.prompt(st,f)+'\nInstrucción adicional: '+abInst:cfg.prompt(st,f);
+      const c=await callClaude(promptFinal,bannerUrl,prog);
+      const trackId=(crypto.randomUUID||function(){return Math.random().toString(36).slice(2)+Date.now().toString(36)})().replace(/-/g,'');
+      const html=buildHTML(st.n,c.cuerpo,bannerUrl,prog,{...c,trackId});
       if(useZepto){await sendZeptoMail(st.e,st.n,c.asunto,html);}
       else{await sendZoho(st.e,c.asunto,html);}
-      ok++;addLog(st.n,st.e,true,c.asunto,useZepto?'zepto':'zoho',c.asunto,c.cuerpo);
-    }catch(e){err++;addLog(st.n,st.e,false,e.message?.slice(0,80)||'Error',useZepto?'zepto':'zoho');}
+      ok++;addLog(st.n,st.e,true,c.asunto,useZepto?'zepto':'zoho',c.asunto,c.cuerpo,{trackId,abGroup,prog:st.p||prog});
+    }catch(e){err++;addLog(st.n,st.e,false,e.message?.slice(0,80)||'Error',useZepto?'zepto':'zoho','','',{abGroup:'',prog:st.p||''});}
   }
   btn.disabled=false;btn.textContent='Enviar a todos';
   const via=useZepto?'ZeptoMail':'Zoho Mail';
@@ -1109,24 +1190,35 @@ function importarHojas(){
     const dataRows=isHeader?rows.slice(1):rows;
     // Detectar índices de columnas por header
     let iNombre=0,iEmail=1,iPrograma=2,iExtra=3,iTel=-1;
+    let iModulo=-1,iAvance=-1,iPendientes=-1,iUltimoAcceso=-1,iFechaFin=-1;
     if(isHeader){
       firstRow.forEach((h,i)=>{
-        const k=(h||'').toString().toLowerCase().trim();
+        const k=(h||'').toString().toLowerCase().trim().replace(/[^a-záéíóúñ%\s]/gi,'').trim();
         if(['nombre','name'].includes(k)) iNombre=i;
         else if(['correo','email','e-mail'].includes(k)) iEmail=i;
         else if(['programa','program','curso'].includes(k)) iPrograma=i;
         else if(['teléfono','telefono','tel','phone','celular','whatsapp'].includes(k)) iTel=i;
         else if(['extra','notas','notes'].includes(k)) iExtra=i;
+        else if(k.includes('módulo')||k.includes('modulo')) iModulo=i;
+        else if(k.includes('avance')||k.includes('progreso')||k==='%') iAvance=i;
+        else if(k.includes('pendiente')) iPendientes=i;
+        else if(k.includes('último acceso')||k.includes('ultimo acceso')||k.includes('último')) iUltimoAcceso=i;
+        else if(k.includes('fecha fin')||k.includes('fin')||k.includes('vencimiento')) iFechaFin=i;
       });
     }
     dataRows.forEach(row=>{
       const n=(row[iNombre]||'').toString().trim();
       const e=(row[iEmail]||'').toString().trim();
       const p=(row[iPrograma]||'').toString().trim()||sheetName;
-      const x=iExtra>=0?(row[iExtra]||'').toString().trim():'';
+      const avance=iAvance>=0?(row[iAvance]||'').toString().trim().replace('%',''):'';
+      const x=avance||iExtra>=0?(row[iExtra]||'').toString().trim():'';
       const tel=iTel>=0?(row[iTel]||'').toString().trim().replace(/[^0-9+]/g,''):'';
+      const modulo=iModulo>=0?(row[iModulo]||'').toString().trim():'';
+      const pendientes=iPendientes>=0?(row[iPendientes]||'').toString().trim():'';
+      const ultimo_acceso=iUltimoAcceso>=0?(row[iUltimoAcceso]||'').toString().trim():'';
+      const fecha_fin=iFechaFin>=0?(row[iFechaFin]||'').toString().trim():'';
       if(n&&e&&e.includes('@')){
-        students.push({id:Date.now()+Math.random(),n,e,p,extra:x,tel});
+        students.push({id:Date.now()+Math.random(),n,e,p,extra:x,tel,modulo,avance,pendientes,ultimo_acceso,fecha_fin});
         count++;
       }
     });
@@ -1135,6 +1227,77 @@ function importarHojas(){
   document.getElementById('excel-msg').textContent=`✓ ${count} estudiante(s) importados de ${selected.length} hoja(s)`;
   document.getElementById('sheet-selector').style.display='none';
   setSt('send-st',`${count} estudiante(s) importados desde Excel.`,'ok');
+}
+
+// ── Dashboard ──
+async function loadDashboard(){
+  const cards=['dc-sent','dc-ok','dc-err','dc-open'];
+  cards.forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='…';});
+  try{
+    const d=await fetch('/api/stats',{headers:{'X-Session-Token':sessionStorage.getItem('mdt_session')||''}}).then(r=>r.json());
+    // Cards
+    const pct=(n,t)=>t>0?Math.round(n/t*100)+'%':'0%';
+    document.getElementById('dc-sent').textContent=d.sent;
+    document.getElementById('dc-sent-sub').textContent=`${d.total} intentos · ${d.errors} errores`;
+    document.getElementById('dc-ok').textContent=pct(d.sent,d.total);
+    document.getElementById('dc-ok-sub').textContent=`${d.sent} de ${d.total}`;
+    document.getElementById('dc-err').textContent=d.errors;
+    document.getElementById('dc-err-sub').textContent=d.total?pct(d.errors,d.total)+' del total':'';
+    document.getElementById('dc-open').textContent=pct(d.opened,d.sent);
+    document.getElementById('dc-open-sub').textContent=`${d.opened} abiertos de ${d.sent}`;
+    // Por programa
+    const progEl=document.getElementById('dash-prog');
+    const progs=Object.entries(d.by_prog).sort((a,b)=>b[1].sent-a[1].sent);
+    const maxP=progs[0]?.[1]?.sent||1;
+    progEl.innerHTML=progs.length?progs.map(([k,v])=>`
+      <div class="bar-row">
+        <span class="bar-label" title="${k}">${k}</span>
+        <div class="bar-track"><div class="bar-fill" style="width:${Math.round(v.sent/maxP*100)}%;background:var(--purple)"></div></div>
+        <span class="bar-count">${v.sent}</span>
+      </div>
+      <div style="font-size:10px;color:var(--muted);margin:-6px 0 8px 150px">Abiertos: ${v.opened} (${pct(v.opened,v.sent)})</div>
+    `).join(''):'<p style="font-size:12px;color:var(--hint)">Sin datos aún.</p>';
+    // Por tipo
+    const tipoEl=document.getElementById('dash-tipo');
+    const tipos=Object.entries(d.by_tipo).sort((a,b)=>b[1].sent-a[1].sent);
+    const maxT=tipos[0]?.[1]?.sent||1;
+    const tipoColors={masterclass:'#7c6ffc',seguimiento:'#3ecf8e',bienvenida:'#f5a623',tarea:'#f05252',certificado:'#3ecf8e',pago:'#f5a623'};
+    tipoEl.innerHTML=tipos.length?tipos.map(([k,v])=>`
+      <div class="bar-row">
+        <span class="bar-label">${TIPOS[k]?.label||k}</span>
+        <div class="bar-track"><div class="bar-fill" style="width:${Math.round(v.sent/maxT*100)}%;background:${tipoColors[k]||'var(--purple)'}"></div></div>
+        <span class="bar-count">${v.sent}</span>
+      </div>
+    `).join(''):'<p style="font-size:12px;color:var(--hint)">Sin datos aún.</p>';
+    // Timeline
+    const tlDays=Object.entries(d.timeline);
+    const tlBarsEl=document.getElementById('dash-timeline-bars');
+    const tlLabEl=document.getElementById('dash-timeline-labels');
+    if(tlDays.length){
+      const maxTL=Math.max(...tlDays.map(([,v])=>v),1);
+      tlBarsEl.innerHTML=tlDays.map(([,v])=>`<div class="tl-bar" title="${v} correos" style="height:${Math.round(v/maxTL*56)+4}px"></div>`).join('');
+      tlLabEl.innerHTML=tlDays.map(([k])=>`<span>${k.slice(5)}</span>`).join('');
+    }else{
+      tlBarsEl.innerHTML='<p style="font-size:12px;color:var(--hint)">Sin datos aún.</p>';
+      tlLabEl.innerHTML='';
+    }
+    // A/B
+    const abEl=document.getElementById('dash-ab');
+    const ab=d.ab;
+    const hasAB=ab.A.sent>0||ab.B.sent>0;
+    if(hasAB){
+      abEl.innerHTML=`<table class="ab-table">
+        <tr><th>Grupo</th><th>Enviados</th><th>Abiertos</th><th>Tasa</th></tr>
+        <tr><td><span style="color:var(--green);font-weight:600">Grupo A</span></td><td>${ab.A.sent}</td><td>${ab.A.opened}</td><td><strong>${pct(ab.A.opened,ab.A.sent)}</strong></td></tr>
+        <tr><td><span style="color:var(--purple);font-weight:600">Grupo B</span></td><td>${ab.B.sent}</td><td>${ab.B.opened}</td><td><strong>${pct(ab.B.opened,ab.B.sent)}</strong></td></tr>
+      </table>
+      <p style="font-size:11px;color:var(--muted);margin-top:10px">El grupo con mayor tasa de apertura es el ganador.</p>`;
+    }else{
+      abEl.innerHTML='<p style="font-size:12px;color:var(--hint)">Aún no se han enviado correos con Prueba A/B.</p>';
+    }
+  }catch(e){
+    document.getElementById('dc-sent').textContent='Error';
+  }
 }
 
 // ── Init ──
@@ -1260,12 +1423,13 @@ function setBannerFromSelect(prog,tipo,url){
   if(!banners[prog]) banners[prog]={};
   banners[prog][tipo]=url;saveBanners();renderBannersAssignment();
 }
-function addLog(n,e,ok,det,via,asunto,cuerpo){
+function addLog(n,e,ok,det,via,asunto,cuerpo,extra){
   const t=new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
   const ts=new Date().toLocaleDateString('es-PE',{day:'2-digit',month:'2-digit',year:'numeric'})+' '+t;
   const badge=via==='zepto'?'<span class="mb mb-sp">ZeptoMail</span>':via==='sp'?'<span class="mb mb-sp">SendPulse</span>':'<span class="mb mb-zoho">Zoho</span>';
-  document.getElementById('send-log').innerHTML+=`<div class="lr ${ok?'ok':'err'}"><span class="lt">${t}</span><span>${ok?'Enviado':'Error'} ${badge} — <strong>${n}</strong> &lt;${e}&gt;${det?' — '+det:''}</span></div>`;
-  const entry={ts,n,e,ok,det,tipo:currentType,via,asunto:asunto||'',cuerpo:cuerpo||''};
+  const abBadge=(extra?.abGroup)?` <span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;background:${extra.abGroup==='A'?'var(--green-bg)':'var(--purple-bg)'};color:${extra.abGroup==='A'?'var(--green)':'var(--purple)'};border:1px solid ${extra.abGroup==='A'?'var(--green-border)':'var(--purple-border)'}">Grupo ${extra.abGroup}</span>`:'';
+  document.getElementById('send-log').innerHTML+=`<div class="lr ${ok?'ok':'err'}"><span class="lt">${t}</span><span>${ok?'Enviado':'Error'} ${badge}${abBadge} — <strong>${n}</strong> &lt;${e}&gt;${det?' — '+det:''}</span></div>`;
+  const entry={ts,n,e,ok,det,tipo:currentType,via,asunto:asunto||'',cuerpo:cuerpo||'',track_id:extra?.trackId||'',opened:false,ab_group:extra?.abGroup||'',prog:extra?.prog||''};
   historialCompleto.push(entry);
   apiPost('/api/history-save',{entries:[entry]}).catch(()=>{});
 }
