@@ -352,6 +352,7 @@ textarea{resize:vertical;line-height:1.6}
     <div class="brow">
       <button class="btn btn-p" id="send-btn" onclick="enviar()">Enviar a todos</button>
       <button class="btn btn-g" onclick="abrirProgramar()">🕐 Programar envío</button>
+      <button class="btn btn-g" onclick="imprimirLista()">🖨️ Lista de asistencia</button>
     </div>
     <div id="send-st"></div>
     <div id="send-log" class="log"></div>
@@ -998,7 +999,7 @@ function renderSt(){
     <input value="${esc(s.n)}" placeholder="Nombre" oninput="updSt('${s.id}','n',this.value)"/>
     <input value="${esc(s.e)}" placeholder="correo@email.com" oninput="updSt('${s.id}','e',this.value)"/>
     <input value="${esc(s.p)}" placeholder="Programa" oninput="updSt('${s.id}','p',this.value)"/>
-    <input value="${esc(s.tel||'')}" placeholder="Teléfono" oninput="updSt('${s.id}','tel',this.value)" style="font-size:11px"/>
+    <input value="${esc(s.doc||'')}" placeholder="N° identidad" oninput="updSt('${s.id}','doc',this.value)" style="font-size:11px"/>
     ${hasX?`<input value="${esc(s.extra)}" placeholder="0" oninput="updSt('${s.id}','extra',this.value)"/>`:''}
     <button class="rm" onclick="rmSt('${s.id}')">×</button></div>`).join('');
 }
@@ -1226,7 +1227,7 @@ function importarHojas(){
     const isHeader=firstRow.some(c=>typeof c==='string'&&['nombre','correo','email','programa','teléfono','telefono'].includes(c.toLowerCase().trim()));
     const dataRows=isHeader?rows.slice(1):rows;
     // Detectar índices de columnas por header
-    let iNombre=0,iEmail=1,iPrograma=2,iExtra=3,iTel=-1;
+    let iNombre=0,iEmail=1,iPrograma=2,iExtra=3,iTel=-1,iDoc=-1;
     let iModulo=-1,iAvance=-1,iPendientes=-1,iUltimoAcceso=-1,iFechaFin=-1;
     if(isHeader){
       firstRow.forEach((h,i)=>{
@@ -1241,6 +1242,7 @@ function importarHojas(){
         else if(k.includes('pendiente')) iPendientes=i;
         else if(k.includes('último acceso')||k.includes('ultimo acceso')||k.includes('último')) iUltimoAcceso=i;
         else if(k.includes('fecha fin')||k.includes('fin')||k.includes('vencimiento')) iFechaFin=i;
+        else if(k.includes('identidad')||k.includes('documento')||k.includes('cedula')||k.includes('cédula')||k.includes('dni')||k.includes('id')) iDoc=i;
       });
     }
     dataRows.forEach(row=>{
@@ -1250,12 +1252,13 @@ function importarHojas(){
       const avance=iAvance>=0?(row[iAvance]||'').toString().trim().replace('%',''):'';
       const x=avance||iExtra>=0?(row[iExtra]||'').toString().trim():'';
       const tel=iTel>=0?(row[iTel]||'').toString().trim().replace(/[^0-9+]/g,''):'';
+      const doc=iDoc>=0?(row[iDoc]||'').toString().trim():'';
       const modulo=iModulo>=0?(row[iModulo]||'').toString().trim():'';
       const pendientes=iPendientes>=0?(row[iPendientes]||'').toString().trim():'';
       const ultimo_acceso=iUltimoAcceso>=0?(row[iUltimoAcceso]||'').toString().trim():'';
       const fecha_fin=iFechaFin>=0?(row[iFechaFin]||'').toString().trim():'';
       if(n&&e&&e.includes('@')){
-        students.push({id:Date.now()+Math.random(),n,e,p,extra:x,tel,modulo,avance,pendientes,ultimo_acceso,fecha_fin});
+        students.push({id:Date.now()+Math.random(),n,e,p,extra:x,tel,doc,modulo,avance,pendientes,ultimo_acceso,fecha_fin});
         count++;
       }
     });
@@ -1264,6 +1267,55 @@ function importarHojas(){
   document.getElementById('excel-msg').textContent=`✓ ${count} estudiante(s) importados de ${selected.length} hoja(s)`;
   document.getElementById('sheet-selector').style.display='none';
   setSt('send-st',`${count} estudiante(s) importados desde Excel.`,'ok');
+}
+
+// ── Lista de asistencia para impresión ──
+function imprimirLista(){
+  const valid=students.filter(s=>s.n);
+  if(!valid.length){alert('No hay estudiantes cargados.');return;}
+  const programa=valid[0]?.p||'';
+  const fecha=new Date().toLocaleDateString('es-CO',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  const filas=valid.map((s,i)=>`
+    <tr>
+      <td style="text-align:center">${i+1}</td>
+      <td>${s.n}</td>
+      <td style="text-align:center">${s.doc||''}</td>
+      <td></td>
+    </tr>`).join('');
+  const html=`<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8"/>
+<title>Lista de asistencia — ${programa}</title>
+<style>
+  body{font-family:Arial,sans-serif;padding:30px;color:#000}
+  h2{font-size:18px;margin:0 0 4px}
+  .sub{font-size:13px;color:#444;margin-bottom:6px}
+  .meta{font-size:12px;color:#666;margin-bottom:20px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{background:#1a2a4a;color:#fff;padding:8px 10px;text-align:left;font-weight:600}
+  th:first-child,td:first-child{width:40px;text-align:center}
+  th:nth-child(3),td:nth-child(3){width:140px;text-align:center}
+  th:last-child,td:last-child{width:160px}
+  td{padding:9px 10px;border-bottom:1px solid #ddd;vertical-align:middle}
+  tr:nth-child(even){background:#f8f8f8}
+  .firma-cell{height:32px}
+  .footer{margin-top:30px;font-size:11px;color:#888;text-align:right}
+  @media print{body{padding:15px}}
+</style>
+</head><body>
+<img src="https://merlin-global.com/assets/merlin-logo-BbzWVHUY.png" style="height:36px;margin-bottom:10px"/>
+<h2>Lista de Asistencia</h2>
+<div class="sub">Programa: <strong>${programa||'MDT'}</strong></div>
+<div class="meta">Fecha: ${fecha} &nbsp;·&nbsp; Total participantes: <strong>${valid.length}</strong></div>
+<table>
+  <thead><tr><th>#</th><th>Nombre completo</th><th>N° Identificación</th><th>Firma</th></tr></thead>
+  <tbody>${filas}</tbody>
+</table>
+<div class="footer">Generado por Agente MDT — mdt-agente.up.railway.app</div>
+<script>window.onload=function(){window.print();}<\/script>
+</body></html>`;
+  const w=window.open('','_blank');
+  w.document.write(html);
+  w.document.close();
 }
 
 // ── Dashboard ──
