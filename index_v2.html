@@ -343,8 +343,22 @@ textarea{resize:vertical;line-height:1.6}
         <code onclick="insertVar('{{fecha_inicio}}')" title="Clic para copiar" style="background:var(--surface);padding:2px 7px;border-radius:4px;font-size:11px;cursor:pointer;border:1px solid var(--border)">{{fecha_inicio}}</code>
         <code onclick="insertVar('{{dias_disponibles}}')" title="Días que faltan hasta fecha_fin (calculado automáticamente)" style="background:var(--surface);padding:2px 7px;border-radius:4px;font-size:11px;cursor:pointer;border:1px solid var(--border)">{{dias_disponibles}}</code>
       </div>
+      <details style="margin-bottom:12px">
+        <summary style="font-size:11px;color:var(--purple);cursor:pointer;font-weight:500">¿Cómo usar condicionales?</summary>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px;margin-top:6px;font-size:11px;color:var(--muted);line-height:1.7">
+          <strong style="color:var(--text)">Sintaxis:</strong><br>
+          <code style="font-size:11px">{{#si VARIABLE OPERADOR VALOR}}texto{{/si}}</code><br>
+          <code style="font-size:11px">{{#si VARIABLE OPERADOR VALOR}}texto si cumple{{sino}}texto si no{{/si}}</code><br><br>
+          <strong style="color:var(--text)">Operadores:</strong> &lt; &gt; &lt;= &gt;= == !=<br><br>
+          <strong style="color:var(--text)">Ejemplos:</strong><br>
+          <code style="font-size:11px">{{#si edad &lt; 18}}Necesitas autorización de tus padres.{{sino}}No necesitas autorización.{{/si}}</code><br>
+          <code style="font-size:11px">{{#si avance &lt; 30}}⚠️ Tu avance está por debajo del 30%.{{/si}}</code><br>
+          <code style="font-size:11px">{{#si estado == activo}}Tu matrícula está activa.{{sino}}Contacta a soporte.{{/si}}</code><br>
+          <code style="font-size:11px">{{#si dias_disponibles &lt;= 7}}¡Solo te quedan {{dias_disponibles}} días!{{/si}}</code>
+        </div>
+      </details>
       <div class="f1"><label>Asunto</label><input id="manual-asunto" placeholder="Ej: Tu avance en {{programa}}: {{avance}}% ¡Sigue así, {{nombre}}!"/></div>
-      <div class="f1"><label>Cuerpo del correo</label><textarea id="manual-cuerpo" rows="7" placeholder="Hola {{nombre}},&#10;&#10;Notamos que tu avance en {{programa}} es de {{avance}}% en el módulo {{modulo}}.&#10;&#10;Estado: {{estado}} | Equipo: {{equipo}}&#10;&#10;¡Cuenta con nosotros!"></textarea></div>
+      <div class="f1"><label>Cuerpo del correo</label><textarea id="manual-cuerpo" rows="7" placeholder="Hola {{nombre}},&#10;&#10;{{#si edad < 18}}Recuerda que necesitas la autorización firmada por tus padres.&#10;{{sino}}Ya puedes inscribirte directamente.&#10;{{/si}}&#10;Tu avance en {{modulo}} es {{avance}}%."></textarea></div>
     </div>
     <!-- Selector de servicio -->
     <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center">
@@ -1162,12 +1176,53 @@ function toggleAB(){
   document.getElementById('ab-fields').style.display=on?'block':'none';
 }
 function insertVar(v){
-  // Copia la variable al portapapeles
   navigator.clipboard?.writeText(v).catch(()=>{});
-  // Feedback visual breve
   const el=event.target;const orig=el.style.background;
   el.style.background='var(--purple)';el.style.color='#fff';
   setTimeout(()=>{el.style.background=orig;el.style.color='';},600);
+}
+
+// ── Motor de condicionales para plantillas manuales ──
+// Soporta: {{#si VAR OP VALOR}}...{{sino}}...{{/si}}
+// Operadores: < > <= >= == !=
+// Funciona con números (edad, avance, dias_disponibles) y texto (estado, genero, equipo…)
+function _evalCond(cond, vals){
+  const m=cond.trim().match(/^(\w+)\s*(==|!=|>=|<=|>|<)\s*(.+)$/);
+  if(!m)return false;
+  const [,varName,op,rawVal]=m;
+  const left=vals[varName.toLowerCase()];
+  const right=rawVal.trim().replace(/^["']|["']$/g,'');
+  const lNum=parseFloat(left),rNum=parseFloat(right);
+  if(!isNaN(lNum)&&!isNaN(rNum)){
+    if(op==='<')return lNum<rNum; if(op==='>')return lNum>rNum;
+    if(op==='<=')return lNum<=rNum; if(op==='>=')return lNum>=rNum;
+    if(op==='==')return lNum===rNum; if(op==='!=')return lNum!==rNum;
+  }
+  const ls=String(left||'').toLowerCase(),rs=right.toLowerCase();
+  if(op==='==')return ls===rs; if(op==='!=')return ls!==rs;
+  return false;
+}
+function applyConditionals(text,st,prog){
+  const diasDisp=st.fecha_fin?Math.max(0,Math.ceil((new Date(st.fecha_fin)-new Date())/(1000*60*60*24))):0;
+  const vals={
+    nombre:st.n||'', programa:prog||'', modulo:st.modulo||'',
+    avance:parseFloat(st.avance)||0, estado:st.estado||'', equipo:st.equipo||'',
+    genero:st.genero||'', edad:parseFloat(st.edad)||0,
+    pendientes:st.pendientes||'', dias_disponibles:diasDisp,
+    fecha_fin:st.fecha_fin||'', fecha_inicio:st.fecha_inicio||''
+  };
+  // Procesar {{#si ...}}...{{sino}}...{{/si}} (anidamiento simple, de adentro hacia afuera)
+  let prev='';
+  while(prev!==text){
+    prev=text;
+    text=text.replace(/\{\{#si ([^}]+)\}\}([\s\S]*?)\{\{\/si\}\}/gi,(_,cond,body)=>{
+      const parts=body.split(/\{\{sino\}\}/i);
+      const ifPart=parts[0]||'';
+      const elsePart=parts[1]||'';
+      return _evalCond(cond,vals)?ifPart:elsePart;
+    });
+  }
+  return text;
 }
 let modoEnvio='ia';
 function setModo(m){
@@ -1210,7 +1265,8 @@ async function enviar(){
       const trackId=(crypto.randomUUID||function(){return Math.random().toString(36).slice(2)+Date.now().toString(36)})().replace(/-/g,'');
       let asunto,cuerpo;
       if(esManual){
-        const repl=(t)=>t
+        const diasDisp=st.fecha_fin?Math.max(0,Math.ceil((new Date(st.fecha_fin)-new Date())/(1000*60*60*24))):0;
+        const repl=(t)=>applyConditionals(t,st,prog)
           .replace(/\{\{nombre\}\}/gi,st.n||'')
           .replace(/\{\{programa\}\}/gi,prog||'')
           .replace(/\{\{modulo\}\}/gi,st.modulo||'')
@@ -1223,7 +1279,7 @@ async function enviar(){
           .replace(/\{\{ultimo_acceso\}\}/gi,st.ultimo_acceso||'')
           .replace(/\{\{fecha_fin\}\}/gi,st.fecha_fin||'')
           .replace(/\{\{fecha_inicio\}\}/gi,st.fecha_inicio||'')
-          .replace(/\{\{dias_disponibles\}\}/gi,(()=>{if(!st.fecha_fin)return'';const d=Math.ceil((new Date(st.fecha_fin)-new Date())/(1000*60*60*24));return d>0?String(d):'0';})());
+          .replace(/\{\{dias_disponibles\}\}/gi,String(diasDisp));
         asunto=repl(manualAsunto);
         cuerpo=repl(manualCuerpo);
       } else {
