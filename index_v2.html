@@ -331,6 +331,7 @@ textarea{resize:vertical;line-height:1.6}
       <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px">
         <code onclick="insertVar('{{nombre}}')" title="Clic para copiar" style="background:var(--surface);padding:2px 7px;border-radius:4px;font-size:11px;cursor:pointer;border:1px solid var(--border)">{{nombre}}</code>
         <code onclick="insertVar('{{correo}}')" title="Clic para copiar" style="background:var(--surface);padding:2px 7px;border-radius:4px;font-size:11px;cursor:pointer;border:1px solid var(--border)">{{correo}}</code>
+        <code onclick="insertVar('{{telefono}}')" title="Clic para copiar" style="background:var(--surface);padding:2px 7px;border-radius:4px;font-size:11px;cursor:pointer;border:1px solid var(--border)">{{telefono}}</code>
         <code onclick="insertVar('{{programa}}')" title="Clic para copiar" style="background:var(--surface);padding:2px 7px;border-radius:4px;font-size:11px;cursor:pointer;border:1px solid var(--border)">{{programa}}</code>
         <code onclick="insertVar('{{modulo}}')" title="Clic para copiar" style="background:var(--surface);padding:2px 7px;border-radius:4px;font-size:11px;cursor:pointer;border:1px solid var(--border)">{{modulo}}</code>
         <code onclick="insertVar('{{avance}}')" title="Clic para copiar" style="background:var(--surface);padding:2px 7px;border-radius:4px;font-size:11px;cursor:pointer;border:1px solid var(--border)">{{avance}}</code>
@@ -1212,6 +1213,7 @@ function replaceVars(text,st,prog){
   return applyConditionals(text,st,prog)
     .replace(/\{\{nombre\}\}/gi,st.n||'')
     .replace(/\{\{correo\}\}/gi,st.e||'')
+    .replace(/\{\{telefono\}\}/gi,st.tel||'')
     .replace(/\{\{programa\}\}/gi,prog||'')
     .replace(/\{\{modulo\}\}/gi,st.modulo||'')
     .replace(/\{\{avance\}\}/gi,st.avance||'')
@@ -1249,7 +1251,7 @@ function _evalCond(cond, vals){
 function applyConditionals(text,st,prog){
   const diasDisp=st.fecha_fin?Math.max(0,Math.ceil((new Date(st.fecha_fin)-new Date())/(1000*60*60*24))):0;
   const vals={
-    nombre:st.n||'', correo:st.e||'', programa:prog||'', modulo:st.modulo||'',
+    nombre:st.n||'', correo:st.e||'', telefono:st.tel||'', programa:prog||'', modulo:st.modulo||'',
     avance:parseFloat(st.avance)||0, estado:st.estado||'', equipo:st.equipo||'',
     genero:st.genero||'', edad:parseFloat(st.edad)||0,
     pendientes:st.pendientes||'', dias_disponibles:diasDisp,
