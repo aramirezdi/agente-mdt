@@ -788,21 +788,12 @@ function updateHeaderPreview(){
   const sel=document.getElementById('header-banner-sel');
   const prev=document.getElementById('header-banner-preview');
   const img=document.getElementById('header-banner-img');
-  const warn=document.getElementById('header-banner-warn');
   if(!sel||!prev||!img) return;
   const val=sel.value;
-  if(warn) warn.style.display='none';
   if(val==='auto'||val==='default'){prev.style.display='none';return;}
   const b=savedBanners.find(b=>b.name===val);
-  if(b){
-    img.src=b.url;
-    prev.style.display='block';
-    // Advertir si es base64 — los servidores de correo lo bloquean
-    if(b.url.startsWith('data:')&&warn){
-      warn.style.display='block';
-      warn.textContent='⚠ Imagen subida localmente: en el correo enviado se usará el header Merlin (los servidores de correo no aceptan imágenes base64). Para usar tu banner en emails, sube la imagen a Google Drive/Imgur y guárdala como URL externa.';
-    }
-  }else{prev.style.display='none';}
+  if(b){img.src=b.url;prev.style.display='block';}
+  else{prev.style.display='none';}
 }
 // Reemplaza getBannerUrl en contextos de envío/preview para respetar selección del usuario
 function getActiveBannerUrlFromSel(programa,tipo){
@@ -818,8 +809,7 @@ function getActiveBannerUrlFromSel(programa,tipo){
 
 function buildHTML(studentName, bodyText, bannerUrl, programa, extraData){
   extraData = extraData || {};
-  // Los servidores de correo (Zoho, etc.) rechazan data: URLs en img src.
-  // Si el banner es base64 local, se usa el header Merlin por defecto.
+  // Si por algún motivo llega un data: URL (no debería), se usa el header Merlin.
   const safeBanner = (bannerUrl && !bannerUrl.startsWith('data:')) ? bannerUrl : '';
   // Banner
   const bannerSection = safeBanner
@@ -1155,7 +1145,12 @@ function importar(){
 }
 
 // ── API ──
-async function apiPost(path,body){const token=sessionStorage.getItem('mdt_session')||'';const r=await fetch(BASE+path,{method:'POST',headers:{'Content-Type':'application/json','X-Session-Token':token},body:JSON.stringify(body)});return r.json();}
+async function apiPost(path,body){
+  const token=sessionStorage.getItem('mdt_session')||'';
+  const r=await fetch(BASE+path,{method:'POST',headers:{'Content-Type':'application/json','X-Session-Token':token},body:JSON.stringify(body)});
+  if(r.status===401){alert('Tu sesión expiró (el servidor se actualizó). Recarga la página e inicia sesión nuevamente.');sessionStorage.clear();window.location.href='/';throw new Error('Sesión expirada');}
+  return r.json();
+}
 
 async function conectar(){
   const cid=document.getElementById('cfg-cid').value.trim();const cs=document.getElementById('cfg-cs').value.trim();
@@ -1862,30 +1857,44 @@ async function subirBanner(){
   if(!name){msg.style.color='var(--amber)';msg.textContent='Ingresa un nombre.';return;}
   msg.innerHTML='<span style="display:inline-flex;gap:5px;align-items:center"><span class="spin" style="border-color:var(--purple);border-top-color:transparent"></span> Guardando...</span>';
   try{
-    const arr=_lsBannersLoad();
-    if(arr.find(b=>b.name===name)){msg.style.color='var(--amber)';msg.textContent='Ya existe un banner con ese nombre.';return;}
-    let entry;
+    let d;
     if(pendingBannerFile){
-      const sizeKB=Math.round(pendingBannerFile.size/1024);
-      if(pendingBannerFile.size>2*1024*1024){msg.style.color='var(--amber)';msg.textContent='Imagen demasiado grande (máx 2 MB). Usa una URL externa.';return;}
+      if(pendingBannerFile.size>5*1024*1024){msg.style.color='var(--amber)';msg.textContent='Imagen demasiado grande (máx 5 MB).';return;}
       const reader=new FileReader();
       const b64=await new Promise(res=>{reader.onload=e=>res(e.target.result);reader.readAsDataURL(pendingBannerFile);});
-      entry={name,url:b64,type:'upload',size:pendingBannerFile.size};
+      d=await apiPost('/api/banner-upload',{name,data:b64});
     } else if(urlInput){
-      entry={name,url:urlInput,type:'url',size:0};
+      d=await apiPost('/api/banner-url',{name,url:urlInput});
     } else {msg.style.color='var(--amber)';msg.textContent='Selecciona archivo o pega URL.';return;}
-    arr.push(entry);
-    _lsBannersSave(arr);
-    msg.style.color='var(--green)';msg.textContent='Banner guardado.';
-    document.getElementById('banner-name').value='';
-    document.getElementById('banner-url-input').value='';
-    document.getElementById('banner-preview-wrap').style.display='none';
-    pendingBannerFile=null;
-    cargarBanners();
-  }catch(e){msg.style.color='var(--red)';msg.textContent='Error: '+e.message;}
+    if(d.ok){
+      // Guardar también en localStorage como caché (para que el nombre persista en la UI)
+      const arr=_lsBannersLoad().filter(b=>b.name!==name);
+      arr.push({name,url:d.url.startsWith('http')?d.url:BASE+d.url,type:pendingBannerFile?'upload':'url',size:pendingBannerFile?.size||0});
+      _lsBannersSave(arr);
+      msg.style.color='var(--green)';msg.textContent='Banner guardado.';
+      document.getElementById('banner-name').value='';
+      document.getElementById('banner-url-input').value='';
+      document.getElementById('banner-preview-wrap').style.display='none';
+      pendingBannerFile=null;
+      cargarBanners();
+    } else {msg.style.color='var(--red)';msg.textContent='Error: '+(d.error||'desconocido');}
+  }catch(e){if(e.message!=='Sesión expirada')msg.style.color='var(--red)',msg.textContent='Error: '+e.message;}
 }
-function cargarBanners(){
-  savedBanners=_lsBannersLoad();
+async function cargarBanners(){
+  try{
+    const d=await apiPost('/api/banners-list',{});
+    const serverBanners=(d.banners||[]).map(b=>({...b,url:b.url.startsWith('http')?b.url:BASE+b.url}));
+    // Fusionar con caché local: el servidor manda, pero si hay banners de URL guardados localmente que no están en servidor, mantenerlos
+    const lsArr=_lsBannersLoad();
+    const serverNames=new Set(serverBanners.map(b=>b.name));
+    const urlOnlyLocal=lsArr.filter(b=>b.type==='url'&&!serverNames.has(b.name));
+    savedBanners=[...serverBanners,...urlOnlyLocal];
+    _lsBannersSave(savedBanners);
+  }catch(e){
+    if(e.message==='Sesión expirada') return;
+    // Fallback a caché local si el servidor falla
+    savedBanners=_lsBannersLoad();
+  }
   renderBannersSaved();
   renderBannersAssignment();
   renderHeaderSel();
@@ -1910,12 +1919,14 @@ function copiarUrlBanner(url){
   if(url.startsWith('data:')){alert('Este banner es una imagen subida (base64), no tiene URL pública copiable.');return;}
   navigator.clipboard.writeText(url).then(()=>alert('URL copiada.'));
 }
-function eliminarBanner(name,type){
+async function eliminarBanner(name,type){
   if(!confirm('Eliminar "'+name+'"?')) return;
+  // Limpiar de localStorage
   _lsBannersSave(_lsBannersLoad().filter(b=>b.name!==name));
-  // Si algún programa tenía asignado este banner, limpiar la referencia
+  // Limpiar asignación si la URL del banner estaba asignada
   const url=(savedBanners.find(b=>b.name===name)||{}).url||'';
   if(url){Object.keys(banners).forEach(p=>{Object.keys(banners[p]||{}).forEach(t=>{if(banners[p][t]===url){banners[p][t]='';} });});saveBanners();}
+  try{await apiPost('/api/banner-delete',{name,type});}catch(e){}
   cargarBanners();
 }
 function renderBannersAssignment(){
