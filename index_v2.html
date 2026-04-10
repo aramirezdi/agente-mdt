@@ -1034,12 +1034,20 @@ function renderSt(){
   const clearBtn=document.getElementById('clear-all-btn');
   if(countEl) countEl.textContent=students.length?`(${students.length})`:'';
   if(clearBtn) clearBtn.style.display=students.length>1?'inline-flex':'none';
+  // Actualizar header con columna Teléfono
+  const hdr=document.getElementById('st-hdr');
+  if(hdr){
+    const baseCols=TIPOS[currentType].cols.slice(0,3);
+    const extraCol=hasX?[TIPOS[currentType].cols[3]]:[];
+    hdr.style.gridTemplateColumns=gc;
+    hdr.innerHTML=[...baseCols,'Teléfono',...extraCol].map(c=>`<span>${c}</span>`).join('')+'<span></span>';
+  }
   if(!students.length){el.innerHTML='<p style="font-size:12px;color:var(--hint);font-style:italic;margin-bottom:7px">Sin estudiantes aún.</p>';return;}
   el.innerHTML=students.map(s=>`<div class="st-row" style="grid-template-columns:${gc}">
     <input value="${esc(s.n)}" placeholder="Nombre" oninput="updSt('${s.id}','n',this.value)"/>
     <input value="${esc(s.e)}" placeholder="correo@email.com" oninput="updSt('${s.id}','e',this.value)"/>
     <input value="${esc(s.p)}" placeholder="Programa" oninput="updSt('${s.id}','p',this.value)"/>
-    <input value="${esc(s.doc||'')}" placeholder="N° identidad" oninput="updSt('${s.id}','doc',this.value)" style="font-size:11px"/>
+    <input value="${esc(s.tel||'')}" placeholder="Teléfono / WhatsApp" oninput="updSt('${s.id}','tel',this.value)" style="font-size:11px"/>
     ${hasX?`<input value="${esc(s.extra)}" placeholder="0" oninput="updSt('${s.id}','extra',this.value)"/>`:''}
     <button class="rm" onclick="rmSt('${s.id}')">×</button></div>`).join('');
 }
