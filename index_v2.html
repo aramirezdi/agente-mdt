@@ -361,6 +361,10 @@ textarea{resize:vertical;line-height:1.6}
       </details>
       <div class="f1"><label>Asunto</label><input id="manual-asunto" placeholder="Ej: Tu avance en {{programa}}: {{avance}}% ¡Sigue así, {{nombre}}!"/></div>
       <div class="f1"><label>Cuerpo del correo</label><textarea id="manual-cuerpo" rows="7" placeholder="Hola {{nombre}},&#10;&#10;{{#si edad < 18}}Recuerda que necesitas la autorización firmada por tus padres.&#10;{{sino}}Ya puedes inscribirte directamente.&#10;{{/si}}&#10;Tu avance en {{modulo}} es {{avance}}%."></textarea></div>
+      <div style="display:flex;gap:10px;margin-top:4px">
+        <div class="f1" style="flex:2"><label>Enlace del botón <span style="font-size:10px;color:var(--hint)">(opcional)</span></label><input id="manual-link" placeholder="https://..."/></div>
+        <div class="f1" style="flex:1"><label>Texto del botón</label><input id="manual-btn-texto" placeholder="Ver más" value="Ver más"/></div>
+      </div>
     </div>
     <!-- Selector de servicio -->
     <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center">
@@ -1153,8 +1157,12 @@ async function preview(){
     }
     const asunto=replaceVars(manualAsunto,st,prog);
     const cuerpo=replaceVars(manualCuerpo,st,prog);
+    const prevLink=document.getElementById('manual-link')?.value.trim()||'';
+    const prevBtnTexto=document.getElementById('manual-btn-texto')?.value.trim()||'Ver más';
+    const prevExtra={contentImg:getContentImgUrl()};
+    if(prevLink){prevExtra.linkEvento=prevLink;prevExtra.btnTexto=prevBtnTexto;}
     pa.className='prev-box prev-subj';pa.textContent=asunto||'(sin asunto)';
-    const previewHtml=buildHTML(st.n,cuerpo,bannerUrl,prog,{contentImg:getContentImgUrl()});
+    const previewHtml=buildHTML(st.n,cuerpo,bannerUrl,prog,prevExtra);
     pb.className='prev-box prev-html';
     pb.innerHTML=`<iframe srcdoc="${previewHtml.replace(/"/g,'&quot;')}" style="width:100%;border:none;border-radius:7px;min-height:400px;" onload="this.style.height=Math.min(this.contentDocument.body.scrollHeight+40,650)+'px'"></iframe>`;
     ps.innerHTML=`<span style="color:var(--green);font-size:12px">Vista previa de: <strong>${st.n}</strong></span>`;
@@ -1339,6 +1347,8 @@ async function enviar(){
   const esManual=modoEnvio==='manual';
   const manualAsunto=document.getElementById('manual-asunto')?.value.trim()||'';
   const manualCuerpo=document.getElementById('manual-cuerpo')?.value.trim()||'';
+  const manualLink=document.getElementById('manual-link')?.value.trim()||'';
+  const manualBtnTexto=document.getElementById('manual-btn-texto')?.value.trim()||'Ver más';
   if(esManual&&(!manualAsunto||!manualCuerpo)){
     btn.disabled=false;btn.textContent='Enviar a todos';
     setSt('send-st','Completa el asunto y el cuerpo del correo manual.','warn');return;
@@ -1364,7 +1374,9 @@ async function enviar(){
         asunto=c.asunto;cuerpo=c.cuerpo;
         var abGroup_=abGroup;
       }
-      const html=buildHTML(st.n,cuerpo,bannerUrl,prog,{trackId,contentImg:getContentImgUrl()});
+      const extraBuild={trackId,contentImg:getContentImgUrl()};
+      if(esManual&&manualLink){extraBuild.linkEvento=manualLink;extraBuild.btnTexto=manualBtnTexto;}
+      const html=buildHTML(st.n,cuerpo,bannerUrl,prog,extraBuild);
       if(useZepto){await sendZeptoMail(st.e,st.n,asunto,html);}
       else{await sendZoho(st.e,asunto,html);}
       ok++;addLog(st.n,st.e,true,asunto,useZepto?'zepto':'zoho',asunto,cuerpo,{trackId,abGroup:abGroup_||'',prog:st.p||prog});
