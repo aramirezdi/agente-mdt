@@ -687,7 +687,7 @@ const TIPOS={
     <input type="hidden" id="f-prog"/>`,
     prompt(st,f){
       const avance=parseFloat(st.avance||st.extra||0);
-      const diasRestantes=(()=>{if(!st.fecha_fin)return null;const hoy=new Date();const fin=new Date(st.fecha_fin);const d=Math.ceil((fin-hoy)/(1000*60*60*24));return d>0?d:0;})();
+      const diasRestantes=(()=>{if(!st.fecha_fin)return null;const hoy=new Date();const fin=parseDate(st.fecha_fin);if(!fin)return null;const d=Math.ceil((fin-hoy)/(1000*60*60*24));return d>0?d:0;})();
       const diasTexto=diasRestantes!==null?` | Días restantes: ${diasRestantes}`:'';
       let tono,instruccion;
       if(avance>=70){tono='MOTIVACIONAL — sprint final';instruccion='Tono celebratorio y motivador. Están muy cerca de terminar. Énfasis en el logro que están a punto de alcanzar.';}
@@ -1207,9 +1207,27 @@ function insertVar(v){
   setTimeout(()=>{el.style.background=orig;el.style.color='';},600);
 }
 
+// ── Parser de fechas flexible (DD/MM/YYYY, DD/MM/YY, YYYY-MM-DD, MM/DD/YYYY) ──
+function parseDate(str){
+  if(!str) return null;
+  const s=String(str).trim();
+  // ISO: 2026-04-14
+  if(/^\d{4}-\d{2}-\d{2}/.test(s)) return new Date(s);
+  // DD/MM/YYYY o DD/MM/YY
+  const dmy=s.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})$/);
+  if(dmy){
+    let [,d,m,y]=dmy;
+    if(y.length===2) y='20'+y;
+    return new Date(`${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`);
+  }
+  // Fallback al parser nativo
+  const dt=new Date(s);
+  return isNaN(dt)?null:dt;
+}
+
 // ── Sustitución de variables para plantillas manuales ──
 function replaceVars(text,st,prog){
-  const diasDisp=st.fecha_fin?Math.max(0,Math.ceil((new Date(st.fecha_fin)-new Date())/(1000*60*60*24))):0;
+  const diasDisp=(()=>{const fin=parseDate(st.fecha_fin);return fin?Math.max(0,Math.ceil((fin-new Date())/(1000*60*60*24))):0;})();
   return applyConditionals(text,st,prog)
     .replace(/\{\{nombre\}\}/gi,st.n||'')
     .replace(/\{\{correo\}\}/gi,st.e||'')
@@ -1249,7 +1267,7 @@ function _evalCond(cond, vals){
   return false;
 }
 function applyConditionals(text,st,prog){
-  const diasDisp=st.fecha_fin?Math.max(0,Math.ceil((new Date(st.fecha_fin)-new Date())/(1000*60*60*24))):0;
+  const diasDisp=(()=>{const fin=parseDate(st.fecha_fin);return fin?Math.max(0,Math.ceil((fin-new Date())/(1000*60*60*24))):0;})();
   const vals={
     nombre:st.n||'', correo:st.e||'', telefono:st.tel||'', programa:prog||'', modulo:st.modulo||'',
     avance:parseFloat(st.avance)||0, estado:st.estado||'', equipo:st.equipo||'',
