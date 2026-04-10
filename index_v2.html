@@ -767,7 +767,7 @@ function buildHTML(studentName, bodyText, bannerUrl, programa, extraData){
   extraData = extraData || {};
   // Banner
   const bannerSection = bannerUrl
-    ? `<tr><td style="border-radius:12px 12px 0 0;overflow:hidden;"><img src="${bannerUrl}" alt="${programa}" style="width:100%;max-width:600px;height:200px;object-fit:cover;display:block;"/></td></tr>`
+    ? `<tr><td style="border-radius:12px 12px 0 0;overflow:hidden;line-height:0;"><img src="${bannerUrl}" alt="${programa}" style="width:100%;max-width:600px;height:auto;display:block;"/></td></tr>`
     : `<tr><td style="background:#0a1628;padding:32px 36px;border-radius:12px 12px 0 0;border-bottom:4px solid #f5a623;"><img src="https://merlin-global.com/assets/merlin-logo-BbzWVHUY.png" alt="Merlin" style="height:50px"><p style="margin:0;font-size:13px;font-weight:700;color:#f5a623;text-transform:uppercase;letter-spacing:2.5px;">${programa||'MDT'}</p></td></tr>`;
 
   // Contenido de texto
@@ -1767,6 +1767,9 @@ async function loadDashboard(){
 // ── Estado banners ──
 let savedBanners = [];
 let pendingBannerFile = null;
+// Banners en localStorage (independiente del servidor/Railway)
+function _lsBannersLoad(){try{return JSON.parse(localStorage.getItem('mdt_banners_store')||'[]');}catch{return[];}}
+function _lsBannersSave(arr){try{localStorage.setItem('mdt_banners_store',JSON.stringify(arr));}catch(e){alert('Error al guardar en localStorage: '+e.message);}}
 let currentResendEntry = null;
 let historialFiltro = 'all';
 let historialCompleto = [];
@@ -1802,33 +1805,34 @@ async function subirBanner(){
   if(!name){msg.style.color='var(--amber)';msg.textContent='Ingresa un nombre.';return;}
   msg.innerHTML='<span style="display:inline-flex;gap:5px;align-items:center"><span class="spin" style="border-color:var(--purple);border-top-color:transparent"></span> Guardando...</span>';
   try{
-    let d;
+    const arr=_lsBannersLoad();
+    if(arr.find(b=>b.name===name)){msg.style.color='var(--amber)';msg.textContent='Ya existe un banner con ese nombre.';return;}
+    let entry;
     if(pendingBannerFile){
+      const sizeKB=Math.round(pendingBannerFile.size/1024);
+      if(pendingBannerFile.size>2*1024*1024){msg.style.color='var(--amber)';msg.textContent='Imagen demasiado grande (máx 2 MB). Usa una URL externa.';return;}
       const reader=new FileReader();
       const b64=await new Promise(res=>{reader.onload=e=>res(e.target.result);reader.readAsDataURL(pendingBannerFile);});
-      d=await apiPost('/api/banner-upload',{name,data:b64});
+      entry={name,url:b64,type:'upload',size:pendingBannerFile.size};
     } else if(urlInput){
-      d=await apiPost('/api/banner-url',{name,url:urlInput});
+      entry={name,url:urlInput,type:'url',size:0};
     } else {msg.style.color='var(--amber)';msg.textContent='Selecciona archivo o pega URL.';return;}
-    if(d.ok){
-      msg.style.color='var(--green)';msg.textContent='Banner guardado.';
-      document.getElementById('banner-name').value='';
-      document.getElementById('banner-url-input').value='';
-      document.getElementById('banner-preview-wrap').style.display='none';
-      pendingBannerFile=null;
-      cargarBanners();
-    } else {msg.style.color='var(--red)';msg.textContent='Error: '+(d.error||'desconocido');}
+    arr.push(entry);
+    _lsBannersSave(arr);
+    msg.style.color='var(--green)';msg.textContent='Banner guardado.';
+    document.getElementById('banner-name').value='';
+    document.getElementById('banner-url-input').value='';
+    document.getElementById('banner-preview-wrap').style.display='none';
+    pendingBannerFile=null;
+    cargarBanners();
   }catch(e){msg.style.color='var(--red)';msg.textContent='Error: '+e.message;}
 }
-async function cargarBanners(){
-  try{
-    const d=await apiPost('/api/banners-list',{});
-    savedBanners=d.banners||[];
-    renderBannersSaved();
-    renderBannersAssignment();
-    const sel=document.getElementById('banner-prog-sel');
-    if(sel) sel.innerHTML='<option value="">Sin programa específico</option>'+programs.map(p=>`<option value="${p}">${p}</option>`).join('');
-  }catch(e){console.log('cargarBanners:',e);}
+function cargarBanners(){
+  savedBanners=_lsBannersLoad();
+  renderBannersSaved();
+  renderBannersAssignment();
+  const sel=document.getElementById('banner-prog-sel');
+  if(sel) sel.innerHTML='<option value="">Sin programa específico</option>'+programs.map(p=>`<option value="${p}">${p}</option>`).join('');
 }
 function renderBannersSaved(){
   const el=document.getElementById('banners-saved-list');
@@ -1845,13 +1849,16 @@ function renderBannersSaved(){
     </div>`).join('');
 }
 function copiarUrlBanner(url){
-  const full=url.startsWith('http')?url:'http://localhost:8080'+url;
-  navigator.clipboard.writeText(full).then(()=>alert('URL copiada: '+full));
+  if(url.startsWith('data:')){alert('Este banner es una imagen subida (base64), no tiene URL pública copiable.');return;}
+  navigator.clipboard.writeText(url).then(()=>alert('URL copiada.'));
 }
-async function eliminarBanner(name,type){
+function eliminarBanner(name,type){
   if(!confirm('Eliminar "'+name+'"?')) return;
-  const d=await apiPost('/api/banner-delete',{name,type});
-  if(d.ok) cargarBanners();
+  _lsBannersSave(_lsBannersLoad().filter(b=>b.name!==name));
+  // Si algún programa tenía asignado este banner, limpiar la referencia
+  const url=(savedBanners.find(b=>b.name===name)||{}).url||'';
+  if(url){Object.keys(banners).forEach(p=>{Object.keys(banners[p]||{}).forEach(t=>{if(banners[p][t]===url){banners[p][t]='';} });});saveBanners();}
+  cargarBanners();
 }
 function renderBannersAssignment(){
   const el=document.getElementById('banners-assignment-list');if(!el) return;
