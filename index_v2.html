@@ -365,6 +365,12 @@ textarea{resize:vertical;line-height:1.6}
       </details>
       <div class="f1"><label>Asunto</label><input id="manual-asunto" placeholder="Ej: Tu avance en {{programa}}: {{avance}}% ¡Sigue así, {{nombre}}!"/></div>
       <div class="f1"><label>Cuerpo del correo</label><textarea id="manual-cuerpo" rows="7" placeholder="Hola {{nombre}},&#10;&#10;{{#si edad < 18}}Recuerda que necesitas la autorización firmada por tus padres.&#10;{{sino}}Ya puedes inscribirte directamente.&#10;{{/si}}&#10;Tu avance en {{modulo}} es {{avance}}%."></textarea></div>
+      <div style="margin-top:6px">
+        <p style="font-size:11px;color:var(--muted);margin-bottom:5px">Emojis — clic para insertar en el campo activo (asunto o cuerpo):</p>
+        <div style="display:flex;flex-wrap:wrap;gap:3px">
+          <span onclick="insertEmoji('🎉')" style="cursor:pointer;font-size:18px;padding:3px;border-radius:4px;line-height:1">🎉</span><span onclick="insertEmoji('🚀')" style="cursor:pointer;font-size:18px;padding:3px;border-radius:4px;line-height:1">🚀</span><span onclick="insertEmoji('✅')" style="cursor:pointer;font-size:18px;padding:3px;border-radius:4px;line-height:1">✅</span><span onclick="insertEmoji('⭐')" style="cursor:pointer;font-size:18px;padding:3px;border-radius:4px;line-height:1">⭐</span><span onclick="insertEmoji('🔥')" style="cursor:pointer;font-size:18px;padding:3px;border-radius:4px;line-height:1">🔥</span><span onclick="insertEmoji('💡')" style="cursor:pointer;font-size:18px;padding:3px;border-radius:4px;line-height:1">💡</span><span onclick="insertEmoji('📢')" style="cursor:pointer;font-size:18px;padding:3px;border-radius:4px;line-height:1">📢</span><span onclick="insertEmoji('👏')" style="cursor:pointer;font-size:18px;padding:3px;border-radius:4px;line-height:1">👏</span><span onclick="insertEmoji('🙌')" style="cursor:pointer;font-size:18px;padding:3px;border-radius:4px;line-height:1">🙌</span><span onclick="insertEmoji('💪')" style="cursor:pointer;font-size:18px;padding:3px;border-radius:4px;line-height:1">💪</span><span onclick="insertEmoji('🎓')" style="cursor:pointer;font-size:18px;padding:3px;border-radius:4px;line-height:1">🎓</span><span onclick="insertEmoji('📚')" style="cursor:pointer;font-size:18px;padding:3px;border-radius:4px;line-height:1">📚</span><span onclick="insertEmoji('📅')" style="cursor:pointer;font-size:18px;padding:3px;border-radius:4px;line-height:1">📅</span><span onclick="insertEmoji('🕐')" style="cursor:pointer;font-size:18px;padding:3px;border-radius:4px;line-height:1">🕐</span><span onclick="insertEmoji('📍')" style="cursor:pointer;font-size:18px;padding:3px;border-radius:4px;line-height:1">📍</span><span onclick="insertEmoji('🔗')" style="cursor:pointer;font-size:18px;padding:3px;border-radius:4px;line-height:1">🔗</span><span onclick="insertEmoji('✉️')" style="cursor:pointer;font-size:18px;padding:3px;border-radius:4px;line-height:1">✉️</span><span onclick="insertEmoji('📩')" style="cursor:pointer;font-size:18px;padding:3px;border-radius:4px;line-height:1">📩</span><span onclick="insertEmoji('💬')" style="cursor:pointer;font-size:18px;padding:3px;border-radius:4px;line-height:1">💬</span><span onclick="insertEmoji('⚠️')" style="cursor:pointer;font-size:18px;padding:3px;border-radius:4px;line-height:1">⚠️</span><span onclick="insertEmoji('❗')" style="cursor:pointer;font-size:18px;padding:3px;border-radius:4px;line-height:1">❗</span><span onclick="insertEmoji('✨')" style="cursor:pointer;font-size:18px;padding:3px;border-radius:4px;line-height:1">✨</span><span onclick="insertEmoji('🏆')" style="cursor:pointer;font-size:18px;padding:3px;border-radius:4px;line-height:1">🏆</span><span onclick="insertEmoji('🎯')" style="cursor:pointer;font-size:18px;padding:3px;border-radius:4px;line-height:1">🎯</span><span onclick="insertEmoji('💼')" style="cursor:pointer;font-size:18px;padding:3px;border-radius:4px;line-height:1">💼</span><span onclick="insertEmoji('📊')" style="cursor:pointer;font-size:18px;padding:3px;border-radius:4px;line-height:1">📊</span><span onclick="insertEmoji('📈')" style="cursor:pointer;font-size:18px;padding:3px;border-radius:4px;line-height:1">📈</span><span onclick="insertEmoji('🤝')" style="cursor:pointer;font-size:18px;padding:3px;border-radius:4px;line-height:1">🤝</span><span onclick="insertEmoji('❤️')" style="cursor:pointer;font-size:18px;padding:3px;border-radius:4px;line-height:1">❤️</span><span onclick="insertEmoji('😊')" style="cursor:pointer;font-size:18px;padding:3px;border-radius:4px;line-height:1">😊</span><span onclick="insertEmoji('👋')" style="cursor:pointer;font-size:18px;padding:3px;border-radius:4px;line-height:1">👋</span><span onclick="insertEmoji('🙏')" style="cursor:pointer;font-size:18px;padding:3px;border-radius:4px;line-height:1">🙏</span><span onclick="insertEmoji('💰')" style="cursor:pointer;font-size:18px;padding:3px;border-radius:4px;line-height:1">💰</span><span onclick="insertEmoji('📝')" style="cursor:pointer;font-size:18px;padding:3px;border-radius:4px;line-height:1">📝</span><span onclick="insertEmoji('🔔')" style="cursor:pointer;font-size:18px;padding:3px;border-radius:4px;line-height:1">🔔</span><span onclick="insertEmoji('⏰')" style="cursor:pointer;font-size:18px;padding:3px;border-radius:4px;line-height:1">⏰</span><span onclick="insertEmoji('🌟')" style="cursor:pointer;font-size:18px;padding:3px;border-radius:4px;line-height:1">🌟</span><span onclick="insertEmoji('💥')" style="cursor:pointer;font-size:18px;padding:3px;border-radius:4px;line-height:1">💥</span><span onclick="insertEmoji('🎁')" style="cursor:pointer;font-size:18px;padding:3px;border-radius:4px;line-height:1">🎁</span><span onclick="insertEmoji('🛡️')" style="cursor:pointer;font-size:18px;padding:3px;border-radius:4px;line-height:1">🛡️</span>
+        </div>
+      </div>
       <div style="display:flex;gap:10px;margin-top:4px">
         <div class="f1" style="flex:2"><label>Enlace del botón <span style="font-size:10px;color:var(--hint)">(opcional)</span></label><input id="manual-link" placeholder="https://..."/></div>
         <div class="f1" style="flex:1"><label>Texto del botón</label><input id="manual-btn-texto" placeholder="Ver más" value="Ver más"/></div>
@@ -1240,6 +1246,22 @@ function insertVar(v){
   const el=event.target;const orig=el.style.background;
   el.style.background='var(--purple)';el.style.color='#fff';
   setTimeout(()=>{el.style.background=orig;el.style.color='';},600);
+}
+let _lastManualFocus='cuerpo';
+// Rastrear qué campo tuvo el foco por último
+document.addEventListener('focusin',e=>{
+  if(e.target.id==='manual-asunto') _lastManualFocus='asunto';
+  if(e.target.id==='manual-cuerpo') _lastManualFocus='cuerpo';
+});
+function insertEmoji(emoji){
+  const id=_lastManualFocus==='asunto'?'manual-asunto':'manual-cuerpo';
+  const el=document.getElementById(id);
+  if(!el) return;
+  const s=el.selectionStart??el.value.length;
+  const e2=el.selectionEnd??el.value.length;
+  el.value=el.value.slice(0,s)+emoji+el.value.slice(e2);
+  el.selectionStart=el.selectionEnd=s+emoji.length;
+  el.focus();
 }
 
 // ── Formato de fecha para mostrar: siempre DD/MM/YYYY ──
