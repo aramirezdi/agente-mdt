@@ -1885,6 +1885,8 @@ function setBannerFromSelect(prog,tipo,url){
   if(!banners[prog]) banners[prog]={};
   banners[prog][tipo]=url;saveBanners();renderBannersAssignment();
 }
+function _lsHistLoad(){try{return JSON.parse(localStorage.getItem('mdt_hist')||'[]');}catch{return[];}}
+function _lsHistSave(arr){try{localStorage.setItem('mdt_hist',JSON.stringify(arr.slice(-500)));}catch{}}
 function addLog(n,e,ok,det,via,asunto,cuerpo,extra){
   const t=new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
   const ts=new Date().toLocaleDateString('es-PE',{day:'2-digit',month:'2-digit',year:'numeric'})+' '+t;
@@ -1893,10 +1895,21 @@ function addLog(n,e,ok,det,via,asunto,cuerpo,extra){
   document.getElementById('send-log').innerHTML+=`<div class="lr ${ok?'ok':'err'}"><span class="lt">${t}</span><span>${ok?'Enviado':'Error'} ${badge}${abBadge} — <strong>${n}</strong> &lt;${e}&gt;${det?' — '+det:''}</span></div>`;
   const entry={ts,n,e,ok,det,tipo:currentType,via,asunto:asunto||'',cuerpo:cuerpo||'',track_id:extra?.trackId||'',opened:false,ab_group:extra?.abGroup||'',prog:extra?.prog||''};
   historialCompleto.push(entry);
+  _lsHistSave(historialCompleto);
   apiPost('/api/history-save',{entries:[entry]}).catch(()=>{});
 }
 async function cargarHistorial(){
-  try{const d=await apiPost('/api/history-load',{});historialCompleto=d.entries||[];}catch(e){historialCompleto=[];}
+  // localStorage es la fuente principal (persiste entre deploys de Railway)
+  const local=_lsHistLoad();
+  try{
+    const d=await apiPost('/api/history-load',{});
+    const server=d.entries||[];
+    // Merge: combinar ambos, deduplicar por ts+e, ordenar por ts
+    const map=new Map();
+    [...local,...server].forEach(h=>map.set((h.ts||'')+(h.e||''),h));
+    historialCompleto=[...map.values()].sort((a,b)=>(a.ts||'').localeCompare(b.ts||''));
+    _lsHistSave(historialCompleto);
+  }catch{historialCompleto=local;}
 }
 function filtrarHist(f){
   historialFiltro=f;
@@ -1908,6 +1921,7 @@ function filtrarHist(f){
 function limpiarHist(){
   if(!confirm('Limpiar todo el historial?')) return;
   historialCompleto=[];
+  _lsHistSave([]);
   apiPost('/api/history-save',{entries:[]}).catch(()=>{});
   renderHist();
 }
