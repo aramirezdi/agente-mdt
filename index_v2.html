@@ -320,6 +320,17 @@ textarea{resize:vertical;line-height:1.6}
         <small id="send-method-info">Agrega estudiantes para ver el método de envío</small>
       </div>
     </div>
+    <!-- Modo de redacción -->
+    <div style="display:flex;gap:6px;margin-bottom:14px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:4px">
+      <button id="modo-ia-btn" class="btn btn-sm" onclick="setModo('ia')" style="flex:1;background:var(--purple);color:#fff;border:none">✨ IA genera el correo</button>
+      <button id="modo-manual-btn" class="btn btn-g btn-sm" onclick="setModo('manual')" style="flex:1">✏️ Escribir correo manualmente</button>
+    </div>
+    <!-- Editor manual -->
+    <div id="manual-editor" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:14px">
+      <p style="font-size:11px;color:var(--muted);margin-bottom:10px">El mismo correo se enviará a todos. Puedes usar <code style="background:var(--surface);padding:1px 5px;border-radius:4px;font-size:11px">{{nombre}}</code> y <code style="background:var(--surface);padding:1px 5px;border-radius:4px;font-size:11px">{{programa}}</code> como variables personalizadas.</p>
+      <div class="f1"><label>Asunto</label><input id="manual-asunto" placeholder="Ej: ¡Te esperamos mañana en la MasterClass!"/></div>
+      <div class="f1"><label>Cuerpo del correo</label><textarea id="manual-cuerpo" rows="6" placeholder="Escribe el correo aquí. Usa {{nombre}} para el nombre del estudiante y {{programa}} para el programa."></textarea></div>
+    </div>
     <!-- Selector de servicio -->
     <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center">
       <span style="font-size:12px;color:var(--muted);font-weight:500">Servicio:</span>
@@ -1135,6 +1146,19 @@ function toggleAB(){
   const on=document.getElementById('ab-active').checked;
   document.getElementById('ab-fields').style.display=on?'block':'none';
 }
+let modoEnvio='ia';
+function setModo(m){
+  modoEnvio=m;
+  document.getElementById('modo-ia-btn').style.cssText=m==='ia'?'flex:1;background:var(--purple);color:#fff;border:none':'flex:1';
+  document.getElementById('modo-ia-btn').className=m==='ia'?'btn btn-sm':'btn btn-g btn-sm';
+  document.getElementById('modo-manual-btn').style.cssText=m==='manual'?'flex:1;background:var(--purple);color:#fff;border:none':'flex:1';
+  document.getElementById('modo-manual-btn').className=m==='manual'?'btn btn-sm':'btn btn-g btn-sm';
+  document.getElementById('manual-editor').style.display=m==='manual'?'block':'none';
+  // Ocultar A/B en modo manual (no aplica)
+  document.getElementById('ab-active').closest('label').style.display=m==='manual'?'none':'flex';
+  document.getElementById('ab-fields').style.display='none';
+  if(m==='manual') document.getElementById('ab-active').checked=false;
+}
 async function enviar(){
   const valid=students.filter(s=>s.n&&s.e);
   if(!valid.length){setSt('send-st','Agrega al menos un estudiante con nombre y correo.','warn');return;}
@@ -1144,7 +1168,15 @@ async function enviar(){
   document.getElementById('send-log').innerHTML='';
   setSt('send-st',`<span class="spin"></span> Procesando ${valid.length} correo(s) via ${useZepto?'ZeptoMail':'Zoho'}...`,'info');
   const f=getF();const cfg=TIPOS[currentType];let ok=0,err=0;
-  const abActive=document.getElementById('ab-active')?.checked;
+  // Modo manual: validar asunto y cuerpo
+  const esManual=modoEnvio==='manual';
+  const manualAsunto=document.getElementById('manual-asunto')?.value.trim()||'';
+  const manualCuerpo=document.getElementById('manual-cuerpo')?.value.trim()||'';
+  if(esManual&&(!manualAsunto||!manualCuerpo)){
+    btn.disabled=false;btn.textContent='Enviar a todos';
+    setSt('send-st','Completa el asunto y el cuerpo del correo manual.','warn');return;
+  }
+  const abActive=!esManual&&document.getElementById('ab-active')?.checked;
   const abInstA=document.getElementById('ab-inst-a')?.value||'';
   const abInstB=document.getElementById('ab-inst-b')?.value||'';
   for(let i=0;i<valid.length;i++){
@@ -1152,20 +1184,29 @@ async function enviar(){
     try{
       const prog=st.p||f.prog||programs[0]||'';
       const bannerUrl=getBannerUrl(prog,currentType);
-      const abGroup=abActive?(i%2===0?'A':'B'):'';
-      const abInst=abGroup==='A'?abInstA:abGroup==='B'?abInstB:'';
-      const promptFinal=abInst?cfg.prompt(st,f)+'\nInstrucción adicional: '+abInst:cfg.prompt(st,f);
-      const c=await callClaude(promptFinal,bannerUrl,prog);
       const trackId=(crypto.randomUUID||function(){return Math.random().toString(36).slice(2)+Date.now().toString(36)})().replace(/-/g,'');
-      const html=buildHTML(st.n,c.cuerpo,bannerUrl,prog,{...c,trackId});
-      if(useZepto){await sendZeptoMail(st.e,st.n,c.asunto,html);}
-      else{await sendZoho(st.e,c.asunto,html);}
-      ok++;addLog(st.n,st.e,true,c.asunto,useZepto?'zepto':'zoho',c.asunto,c.cuerpo,{trackId,abGroup,prog:st.p||prog});
+      let asunto,cuerpo;
+      if(esManual){
+        // Reemplazar {{nombre}} y {{programa}} con datos reales
+        asunto=manualAsunto.replace(/\{\{nombre\}\}/gi,st.n).replace(/\{\{programa\}\}/gi,prog);
+        cuerpo=manualCuerpo.replace(/\{\{nombre\}\}/gi,st.n).replace(/\{\{programa\}\}/gi,prog);
+      } else {
+        const abGroup=abActive?(i%2===0?'A':'B'):'';
+        const abInst=abGroup==='A'?abInstA:abGroup==='B'?abInstB:'';
+        const promptFinal=abInst?cfg.prompt(st,f)+'\nInstrucción adicional: '+abInst:cfg.prompt(st,f);
+        const c=await callClaude(promptFinal,bannerUrl,prog);
+        asunto=c.asunto;cuerpo=c.cuerpo;
+        var abGroup_=abGroup;
+      }
+      const html=buildHTML(st.n,cuerpo,bannerUrl,prog,{trackId});
+      if(useZepto){await sendZeptoMail(st.e,st.n,asunto,html);}
+      else{await sendZoho(st.e,asunto,html);}
+      ok++;addLog(st.n,st.e,true,asunto,useZepto?'zepto':'zoho',asunto,cuerpo,{trackId,abGroup:abGroup_||'',prog:st.p||prog});
     }catch(e){err++;addLog(st.n,st.e,false,e.message?.slice(0,80)||'Error',useZepto?'zepto':'zoho','','',{abGroup:'',prog:st.p||''});}
   }
   btn.disabled=false;btn.textContent='Enviar a todos';
   const via=useZepto?'ZeptoMail':'Zoho Mail';
-  if(err===0)setSt('send-st',`${ok} correo(s) HTML enviados desde support@mdt.edu.pe via ${via}`,'ok');
+  if(err===0)setSt('send-st',`${ok} correo(s) enviados desde support@mdt.edu.pe via ${via}`,'ok');
   else if(ok===0)setSt('send-st','No se pudo enviar ningún correo.','err');
   else setSt('send-st',`${ok} enviados, ${err} con error via ${via}.`,'warn');
 }
