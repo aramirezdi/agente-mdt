@@ -375,6 +375,16 @@ textarea{resize:vertical;line-height:1.6}
         <div class="f1" style="flex:2"><label>Enlace del botón <span style="font-size:10px;color:var(--hint)">(opcional)</span></label><input id="manual-link" placeholder="https://..."/></div>
         <div class="f1" style="flex:1"><label>Texto del botón</label><input id="manual-btn-texto" placeholder="Ver más" value="Ver más"/></div>
       </div>
+      <!-- Plantillas guardadas -->
+      <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <span style="font-size:12px;font-weight:600;color:var(--text)">📋 Plantillas guardadas</span>
+          <button class="btn btn-sm" onclick="guardarPlantilla()" style="background:var(--purple);color:#fff;border:none;font-size:11px">+ Guardar actual</button>
+        </div>
+        <div id="plantillas-lista" style="display:flex;flex-direction:column;gap:6px">
+          <p style="font-size:11px;color:var(--hint);font-style:italic">No hay plantillas guardadas aún.</p>
+        </div>
+      </div>
     </div>
     <!-- Selector de servicio -->
     <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center">
@@ -1247,6 +1257,59 @@ function insertVar(v){
   el.style.background='var(--purple)';el.style.color='#fff';
   setTimeout(()=>{el.style.background=orig;el.style.color='';},600);
 }
+// ── Plantillas manuales ──
+function _loadPlantillas(){try{return JSON.parse(localStorage.getItem('mdt_plantillas')||'[]');}catch{return[];}}
+function _savePlantillas(arr){localStorage.setItem('mdt_plantillas',JSON.stringify(arr));}
+
+function guardarPlantilla(){
+  const asunto=document.getElementById('manual-asunto')?.value.trim()||'';
+  const cuerpo=document.getElementById('manual-cuerpo')?.value.trim()||'';
+  const link=document.getElementById('manual-link')?.value.trim()||'';
+  const btnTexto=document.getElementById('manual-btn-texto')?.value.trim()||'';
+  if(!asunto&&!cuerpo){alert('Escribe al menos el asunto o el cuerpo antes de guardar.');return;}
+  const nombre=prompt('Nombre para esta plantilla:',asunto.slice(0,50)||'Nueva plantilla');
+  if(!nombre) return;
+  const arr=_loadPlantillas();
+  arr.unshift({id:Date.now(),nombre,asunto,cuerpo,link,btnTexto,tipo:currentType});
+  _savePlantillas(arr);
+  renderPlantillas();
+}
+
+function cargarPlantilla(id){
+  const arr=_loadPlantillas();
+  const p=arr.find(x=>x.id===id);
+  if(!p) return;
+  if(document.getElementById('manual-asunto').value||document.getElementById('manual-cuerpo').value){
+    if(!confirm('¿Reemplazar el contenido actual con esta plantilla?')) return;
+  }
+  document.getElementById('manual-asunto').value=p.asunto||'';
+  document.getElementById('manual-cuerpo').value=p.cuerpo||'';
+  document.getElementById('manual-link').value=p.link||'';
+  document.getElementById('manual-btn-texto').value=p.btnTexto||'Ver más';
+}
+
+function eliminarPlantilla(id){
+  if(!confirm('¿Eliminar esta plantilla?')) return;
+  _savePlantillas(_loadPlantillas().filter(x=>x.id!==id));
+  renderPlantillas();
+}
+
+function renderPlantillas(){
+  const el=document.getElementById('plantillas-lista');
+  if(!el) return;
+  const arr=_loadPlantillas();
+  if(!arr.length){el.innerHTML='<p style="font-size:11px;color:var(--hint);font-style:italic">No hay plantillas guardadas aún.</p>';return;}
+  el.innerHTML=arr.map(p=>`
+    <div style="display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:7px 10px">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(p.nombre)}</div>
+        <div style="font-size:10px;color:var(--hint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(p.asunto||p.cuerpo.slice(0,60))}</div>
+      </div>
+      <button class="btn btn-sm btn-g" onclick="cargarPlantilla(${p.id})" style="font-size:11px;white-space:nowrap">Usar</button>
+      <button onclick="eliminarPlantilla(${p.id})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px;padding:0 2px" title="Eliminar">×</button>
+    </div>`).join('');
+}
+
 let _lastManualFocus='cuerpo';
 // Rastrear qué campo tuvo el foco por último
 document.addEventListener('focusin',e=>{
@@ -2211,6 +2274,7 @@ async function enviarWAMasivo(){
 load();
 selType('masterclass');
 renderFormVarChips();
+renderPlantillas();
 addSt('María Torres','maria@ejemplo.com',programs[0]);
 cargarHistorial();
 </script>
