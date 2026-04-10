@@ -558,14 +558,19 @@ class Handler(BaseHTTPRequestHandler):
     # ── Zoho: enviar ──
     def _zoho_send(self, p):
         token, acc_id = get_zoho_token()
+        print(f"  Zoho send — acc_id: {acc_id!r}, token_ok: {bool(token)}")
         if not token:
             self.send_json({"error":"Token de Zoho no disponible. Reconecta Zoho en configuracion."}); return
+        if not acc_id:
+            self.send_json({"error":"ZOHO_ACCOUNT_ID no configurado en Railway."}); return
         payload = p.get("payload",{})
+        print(f"  Zoho payload — from: {payload.get('fromAddress')}, to: {payload.get('toAddress')}, subject: {str(payload.get('subject',''))[:60]}")
         r = self._req(
             f"https://mail.zoho.com/api/accounts/{acc_id}/messages",
             payload,
             {"Content-Type":"application/json","Authorization":f"Zoho-oauthtoken {token}"}
         )
+        print(f"  Zoho response: {str(r)[:400]}")
         self.send_json(r)
 
     # ── Claude ──
