@@ -228,6 +228,17 @@ textarea{resize:vertical;line-height:1.6}
   <div class="card">
     <div class="card-ttl" id="fields-title">Datos</div>
     <div id="dyn-fields"></div>
+    <!-- Header del correo -->
+    <div style="border-top:1px solid var(--border);margin-top:12px;padding-top:14px">
+      <label style="margin-bottom:8px;display:block;font-size:13px;font-weight:600;color:var(--text)">🖼 Header del correo</label>
+      <select id="header-banner-sel" style="font-size:12px;margin-bottom:8px" onchange="updateHeaderPreview()">
+        <option value="auto">Automático (según programa y tipo de correo)</option>
+        <option value="default">⬛ Predeterminado Merlin (sin imagen)</option>
+      </select>
+      <div id="header-banner-preview" style="display:none;margin-top:6px">
+        <img id="header-banner-img" style="width:100%;max-height:90px;object-fit:cover;border-radius:6px;border:1px solid var(--border)"/>
+      </div>
+    </div>
     <!-- Imagen de contenido -->
     <div style="border-top:1px solid var(--border);margin-top:12px;padding-top:14px">
       <label style="margin-bottom:8px;display:block">Imagen de contenido del correo (opcional)</label>
@@ -762,6 +773,39 @@ function getBannerUrl(programa,tipo){
   const key=(programa||'').trim();
   return banners[key]?.[tipo]||'';
 }
+function renderHeaderSel(){
+  const sel=document.getElementById('header-banner-sel');
+  if(!sel) return;
+  const cur=sel.value;
+  sel.innerHTML='<option value="auto">Automático (según programa y tipo de correo)</option>'
+    +'<option value="default">⬛ Predeterminado Merlin (sin imagen)</option>'
+    +savedBanners.map(b=>`<option value="${b.name}">${b.name}</option>`).join('');
+  if([...sel.options].find(o=>o.value===cur)) sel.value=cur;
+  updateHeaderPreview();
+}
+function updateHeaderPreview(){
+  const sel=document.getElementById('header-banner-sel');
+  const prev=document.getElementById('header-banner-preview');
+  const img=document.getElementById('header-banner-img');
+  if(!sel||!prev||!img) return;
+  const val=sel.value;
+  if(val==='auto'||val==='default'){prev.style.display='none';return;}
+  // Buscar banner por nombre
+  const b=savedBanners.find(b=>b.name===val);
+  if(b){img.src=b.url;prev.style.display='block';}
+  else{prev.style.display='none';}
+}
+// Reemplaza getBannerUrl en contextos de envío/preview para respetar selección del usuario
+function getActiveBannerUrlFromSel(programa,tipo){
+  const sel=document.getElementById('header-banner-sel');
+  if(!sel) return getBannerUrl(programa,tipo);
+  const val=sel.value;
+  if(val==='default') return '';
+  if(val==='auto') return getBannerUrl(programa,tipo);
+  // val es el nombre del banner
+  const b=savedBanners.find(b=>b.name===val);
+  return b?b.url:getBannerUrl(programa,tipo);
+}
 
 function buildHTML(studentName, bodyText, bannerUrl, programa, extraData){
   extraData = extraData || {};
@@ -1182,7 +1226,7 @@ async function preview(){
   const f=getF();const cfg=TIPOS[currentType];
   const st=students.find(s=>s.e)||{n:'María Torres',e:'maria@ejemplo.com',p:programs[0]||'MDT',extra:'',modulo:'',avance:'',estado:'',equipo:'',genero:'',edad:'',pendientes:'',ultimo_acceso:'',fecha_fin:'',fecha_inicio:''};
   const prog=st.p||f.prog||programs[0]||'';
-  const bannerUrl=getBannerUrl(prog,currentType);
+  const bannerUrl=getActiveBannerUrlFromSel(prog,currentType);
   const ps=document.getElementById('prev-st'),pa=document.getElementById('prev-subj'),pb=document.getElementById('prev-html');
   if(modoEnvio==='manual'){
     const manualAsunto=document.getElementById('manual-asunto')?.value.trim()||'';
@@ -1543,7 +1587,7 @@ async function enviar(){
     const st=valid[i];
     try{
       const prog=st.p||f.prog||programs[0]||'';
-      const bannerUrl=getBannerUrl(prog,currentType);
+      const bannerUrl=getActiveBannerUrlFromSel(prog,currentType);
       const trackId=crypto.randomUUID ? crypto.randomUUID().replace(/-/g,'') : Math.random().toString(36).slice(2)+Date.now().toString(36);
       let asunto,cuerpo;
       if(esManual){
@@ -1831,6 +1875,7 @@ function cargarBanners(){
   savedBanners=_lsBannersLoad();
   renderBannersSaved();
   renderBannersAssignment();
+  renderHeaderSel();
   const sel=document.getElementById('banner-prog-sel');
   if(sel) sel.innerHTML='<option value="">Sin programa específico</option>'+programs.map(p=>`<option value="${p}">${p}</option>`).join('');
 }
