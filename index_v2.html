@@ -1196,9 +1196,13 @@ async function preview(){
   pb.className='prev-box prev-html empty';pb.innerHTML='Generando...';
   try{
     const r=await callClaude(cfg.prompt(st,f),bannerUrl,prog);
-    const html=buildHTML(st.n,r.cuerpo,bannerUrl,prog,r);
     pa.className='prev-box prev-subj';pa.textContent=r.asunto||'(sin asunto)';
-    const previewHtml=buildHTML(st.n,r.cuerpo,bannerUrl,prog,{...r,contentImg:getContentImgUrl()});
+    const iaExtra={...r,contentImg:getContentImgUrl()};
+    if(f.fecha) iaExtra.fecha=f.fecha;
+    if(f.hora)  iaExtra.hora=f.hora;
+    if(f.nom)   iaExtra.programa=f.nom;
+    if(f.link)  iaExtra.linkEvento=f.link;
+    const previewHtml=buildHTML(st.n,r.cuerpo,bannerUrl,prog,iaExtra);
     pb.className='prev-box prev-html';
     pb.innerHTML=`<iframe srcdoc="${previewHtml.replace(/"/g,'&quot;')}" style="width:100%;border:none;border-radius:7px;min-height:400px;" onload="this.style.height=Math.min(this.contentDocument.body.scrollHeight+40,650)+'px'"></iframe>`;
     ps.innerHTML='<span style="color:var(--green);font-size:12px">Listo — correo HTML con banner</span>';
@@ -1469,14 +1473,16 @@ async function enviar(){
         var abGroup_=abGroup;
       }
       const extraBuild={trackId,contentImg:getContentImgUrl()};
+      // Datos del formulario → sección info del email (fecha/hora/nombre evento)
+      if(f.fecha) extraBuild.fecha=f.fecha;
+      if(f.hora)  extraBuild.hora=f.hora;
+      if(f.nom)   extraBuild.programa=f.nom;
+      // Botón CTA: en manual el campo link tiene prioridad, luego el del formulario
       if(esManual){
-        // Datos del formulario → sección info del email (fecha/hora/programa)
-        if(f.fecha) extraBuild.fecha=f.fecha;
-        if(f.hora)  extraBuild.hora=f.hora;
-        if(f.nom)   extraBuild.programa=f.nom;
-        // Botón del enlace manual (si hay URL, tiene prioridad sobre el link del formulario)
         if(manualLink){extraBuild.linkEvento=manualLink;extraBuild.btnTexto=manualBtnTexto;}
         else if(f.link){extraBuild.linkEvento=f.link;extraBuild.btnTexto=manualBtnTexto;}
+      } else {
+        if(f.link) extraBuild.linkEvento=f.link;
       }
       const html=buildHTML(st.n,cuerpo,bannerUrl,prog,extraBuild);
       if(useZepto){await sendZeptoMail(st.e,st.n,asunto,html);}
