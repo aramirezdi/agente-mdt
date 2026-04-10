@@ -341,7 +341,7 @@ class Handler(BaseHTTPRequestHandler):
             return
         # Servir banners guardados
         if path.startswith("/banners/"):
-            fname = os.path.basename(path)
+            fname = os.path.basename(urllib.parse.unquote(path))
             fpath = os.path.join(BANNERS_DIR, fname)
             if os.path.exists(fpath):
                 ext = fname.rsplit(".",1)[-1].lower()
@@ -643,8 +643,8 @@ class Handler(BaseHTTPRequestHandler):
         b64data  = p.get("data","")
         if not name or not b64data:
             self.send_json({"error":"Faltan nombre o datos."}); return
-        # Limpiar nombre de archivo
-        safe = "".join(c for c in name if c.isalnum() or c in "-_.")[:80]
+        # Limpiar nombre de archivo (solo ASCII para evitar problemas de URL encoding)
+        safe = "".join(c for c in name if c.isascii() and (c.isalnum() or c in "-_."))[:80]
         if not safe: safe = secrets.token_hex(8)
         fpath = os.path.join(BANNERS_DIR, safe)
         try:
