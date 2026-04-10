@@ -1461,7 +1461,7 @@ function renderFormVarChips(){
 function replaceVars(text,st,prog,f){
   f=f||{};
   const diasDisp=(()=>{const fin=parseDate(st.fecha_fin);return fin?Math.max(0,Math.ceil((fin-new Date())/(1000*60*60*24))):0;})();
-  return applyConditionals(text,st,prog)
+  return applyConditionals(text,st,prog,f)
     .replace(/\{\{nombre\}\}/gi,st.n||'')
     .replace(/\{\{correo\}\}/gi,st.e||'')
     .replace(/\{\{telefono\}\}/gi,st.tel||'')
@@ -1506,7 +1506,8 @@ function _evalCond(cond, vals){
   if(op==='==')return ls===rs; if(op==='!=')return ls!==rs;
   return false;
 }
-function applyConditionals(text,st,prog){
+function applyConditionals(text,st,prog,f){
+  f=f||{};
   const diasDisp=(()=>{const fin=parseDate(st.fecha_fin);return fin?Math.max(0,Math.ceil((fin-new Date())/(1000*60*60*24))):0;})();
   const vals={
     nombre:st.n||'', correo:st.e||'', telefono:st.tel||'', programa:prog||'', modulo:st.modulo||'',
