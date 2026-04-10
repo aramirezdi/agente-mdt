@@ -344,7 +344,13 @@ textarea{resize:vertical;line-height:1.6}
         <code onclick="insertVar('{{fecha_fin}}')" title="Clic para copiar" style="background:var(--surface);padding:2px 7px;border-radius:4px;font-size:11px;cursor:pointer;border:1px solid var(--border)">{{fecha_fin}}</code>
         <code onclick="insertVar('{{fecha_inicio}}')" title="Clic para copiar" style="background:var(--surface);padding:2px 7px;border-radius:4px;font-size:11px;cursor:pointer;border:1px solid var(--border)">{{fecha_inicio}}</code>
         <code onclick="insertVar('{{dias_disponibles}}')" title="Días que faltan hasta fecha_fin (calculado automáticamente)" style="background:var(--surface);padding:2px 7px;border-radius:4px;font-size:11px;cursor:pointer;border:1px solid var(--border)">{{dias_disponibles}}</code>
+        <code onclick="insertVar('{{evento}}')" title="Nombre del evento/tarea del formulario" style="background:var(--surface);padding:2px 7px;border-radius:4px;font-size:11px;cursor:pointer;border:1px solid var(--border);border-color:var(--purple-border);color:var(--purple)">{{evento}}</code>
+        <code onclick="insertVar('{{fecha_evento}}')" title="Fecha del formulario" style="background:var(--surface);padding:2px 7px;border-radius:4px;font-size:11px;cursor:pointer;border:1px solid var(--purple-border);color:var(--purple)">{{fecha_evento}}</code>
+        <code onclick="insertVar('{{hora_evento}}')" title="Hora del formulario" style="background:var(--surface);padding:2px 7px;border-radius:4px;font-size:11px;cursor:pointer;border:1px solid var(--purple-border);color:var(--purple)">{{hora_evento}}</code>
+        <code onclick="insertVar('{{link_evento}}')" title="Link del formulario" style="background:var(--surface);padding:2px 7px;border-radius:4px;font-size:11px;cursor:pointer;border:1px solid var(--purple-border);color:var(--purple)">{{link_evento}}</code>
+        <code onclick="insertVar('{{instrucciones}}')" title="Instrucciones del formulario" style="background:var(--surface);padding:2px 7px;border-radius:4px;font-size:11px;cursor:pointer;border:1px solid var(--purple-border);color:var(--purple)">{{instrucciones}}</code>
       </div>
+      <p style="font-size:10px;color:var(--purple);margin-bottom:10px">Variables en morado vienen del formulario de tipo de correo (fecha, hora, enlace, etc.).</p>
       <details style="margin-bottom:12px">
         <summary style="font-size:11px;color:var(--purple);cursor:pointer;font-weight:500">¿Cómo usar condicionales?</summary>
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px;margin-top:6px;font-size:11px;color:var(--muted);line-height:1.7">
@@ -1155,12 +1161,16 @@ async function preview(){
     if(!manualAsunto&&!manualCuerpo){
       ps.innerHTML='<span style="color:var(--amber);font-size:12px">Escribe el asunto y el cuerpo primero.</span>';return;
     }
-    const asunto=replaceVars(manualAsunto,st,prog);
-    const cuerpo=replaceVars(manualCuerpo,st,prog);
+    const asunto=replaceVars(manualAsunto,st,prog,f);
+    const cuerpo=replaceVars(manualCuerpo,st,prog,f);
     const prevLink=document.getElementById('manual-link')?.value.trim()||'';
     const prevBtnTexto=document.getElementById('manual-btn-texto')?.value.trim()||'Ver más';
     const prevExtra={contentImg:getContentImgUrl()};
+    if(f.fecha) prevExtra.fecha=f.fecha;
+    if(f.hora)  prevExtra.hora=f.hora;
+    if(f.nom)   prevExtra.programa=f.nom;
     if(prevLink){prevExtra.linkEvento=prevLink;prevExtra.btnTexto=prevBtnTexto;}
+    else if(f.link){prevExtra.linkEvento=f.link;prevExtra.btnTexto=prevBtnTexto;}
     pa.className='prev-box prev-subj';pa.textContent=asunto||'(sin asunto)';
     const previewHtml=buildHTML(st.n,cuerpo,bannerUrl,prog,prevExtra);
     pb.className='prev-box prev-html';
@@ -1241,7 +1251,8 @@ function parseDate(str){
 }
 
 // ── Sustitución de variables para plantillas manuales ──
-function replaceVars(text,st,prog){
+function replaceVars(text,st,prog,f){
+  f=f||{};
   const diasDisp=(()=>{const fin=parseDate(st.fecha_fin);return fin?Math.max(0,Math.ceil((fin-new Date())/(1000*60*60*24))):0;})();
   return applyConditionals(text,st,prog)
     .replace(/\{\{nombre\}\}/gi,st.n||'')
@@ -1258,7 +1269,13 @@ function replaceVars(text,st,prog){
     .replace(/\{\{ultimo_acceso\}\}/gi,st.ultimo_acceso||'')
     .replace(/\{\{fecha_fin\}\}/gi,fmtDate(st.fecha_fin))
     .replace(/\{\{fecha_inicio\}\}/gi,fmtDate(st.fecha_inicio))
-    .replace(/\{\{dias_disponibles\}\}/gi,String(diasDisp));
+    .replace(/\{\{dias_disponibles\}\}/gi,String(diasDisp))
+    // Variables del formulario (tipo de correo)
+    .replace(/\{\{evento\}\}/gi,f.nom||'')
+    .replace(/\{\{fecha_evento\}\}/gi,f.fecha?fmtDate(f.fecha):'')
+    .replace(/\{\{hora_evento\}\}/gi,f.hora||'')
+    .replace(/\{\{link_evento\}\}/gi,f.link||'')
+    .replace(/\{\{instrucciones\}\}/gi,f.inst||'');
 }
 
 // ── Motor de condicionales para plantillas manuales ──
@@ -1364,8 +1381,8 @@ async function enviar(){
       const trackId=crypto.randomUUID ? crypto.randomUUID().replace(/-/g,'') : Math.random().toString(36).slice(2)+Date.now().toString(36);
       let asunto,cuerpo;
       if(esManual){
-        asunto=replaceVars(manualAsunto,st,prog);
-        cuerpo=replaceVars(manualCuerpo,st,prog);
+        asunto=replaceVars(manualAsunto,st,prog,f);
+        cuerpo=replaceVars(manualCuerpo,st,prog,f);
       } else {
         const abGroup=abActive?(i%2===0?'A':'B'):'';
         const abInst=abGroup==='A'?abInstA:abGroup==='B'?abInstB:'';
@@ -1375,7 +1392,15 @@ async function enviar(){
         var abGroup_=abGroup;
       }
       const extraBuild={trackId,contentImg:getContentImgUrl()};
-      if(esManual&&manualLink){extraBuild.linkEvento=manualLink;extraBuild.btnTexto=manualBtnTexto;}
+      if(esManual){
+        // Datos del formulario → sección info del email (fecha/hora/programa)
+        if(f.fecha) extraBuild.fecha=f.fecha;
+        if(f.hora)  extraBuild.hora=f.hora;
+        if(f.nom)   extraBuild.programa=f.nom;
+        // Botón del enlace manual (si hay URL, tiene prioridad sobre el link del formulario)
+        if(manualLink){extraBuild.linkEvento=manualLink;extraBuild.btnTexto=manualBtnTexto;}
+        else if(f.link){extraBuild.linkEvento=f.link;extraBuild.btnTexto=manualBtnTexto;}
+      }
       const html=buildHTML(st.n,cuerpo,bannerUrl,prog,extraBuild);
       if(useZepto){await sendZeptoMail(st.e,st.n,asunto,html);}
       else{await sendZoho(st.e,asunto,html);}
