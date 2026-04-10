@@ -238,6 +238,7 @@ textarea{resize:vertical;line-height:1.6}
       <div id="header-banner-preview" style="display:none;margin-top:6px">
         <img id="header-banner-img" style="width:100%;max-height:90px;object-fit:cover;border-radius:6px;border:1px solid var(--border)"/>
       </div>
+      <div id="header-banner-warn" style="display:none;margin-top:6px;font-size:11px;color:var(--amber);background:rgba(245,166,35,0.08);border:1px solid rgba(245,166,35,0.3);border-radius:6px;padding:8px 10px;line-height:1.5"></div>
     </div>
     <!-- Imagen de contenido -->
     <div style="border-top:1px solid var(--border);margin-top:12px;padding-top:14px">
@@ -787,13 +788,21 @@ function updateHeaderPreview(){
   const sel=document.getElementById('header-banner-sel');
   const prev=document.getElementById('header-banner-preview');
   const img=document.getElementById('header-banner-img');
+  const warn=document.getElementById('header-banner-warn');
   if(!sel||!prev||!img) return;
   const val=sel.value;
+  if(warn) warn.style.display='none';
   if(val==='auto'||val==='default'){prev.style.display='none';return;}
-  // Buscar banner por nombre
   const b=savedBanners.find(b=>b.name===val);
-  if(b){img.src=b.url;prev.style.display='block';}
-  else{prev.style.display='none';}
+  if(b){
+    img.src=b.url;
+    prev.style.display='block';
+    // Advertir si es base64 — los servidores de correo lo bloquean
+    if(b.url.startsWith('data:')&&warn){
+      warn.style.display='block';
+      warn.textContent='⚠ Imagen subida localmente: en el correo enviado se usará el header Merlin (los servidores de correo no aceptan imágenes base64). Para usar tu banner en emails, sube la imagen a Google Drive/Imgur y guárdala como URL externa.';
+    }
+  }else{prev.style.display='none';}
 }
 // Reemplaza getBannerUrl en contextos de envío/preview para respetar selección del usuario
 function getActiveBannerUrlFromSel(programa,tipo){
@@ -809,9 +818,12 @@ function getActiveBannerUrlFromSel(programa,tipo){
 
 function buildHTML(studentName, bodyText, bannerUrl, programa, extraData){
   extraData = extraData || {};
+  // Los servidores de correo (Zoho, etc.) rechazan data: URLs en img src.
+  // Si el banner es base64 local, se usa el header Merlin por defecto.
+  const safeBanner = (bannerUrl && !bannerUrl.startsWith('data:')) ? bannerUrl : '';
   // Banner
-  const bannerSection = bannerUrl
-    ? `<tr><td style="border-radius:12px 12px 0 0;overflow:hidden;line-height:0;"><img src="${bannerUrl}" alt="${programa}" style="width:100%;max-width:600px;height:auto;display:block;"/></td></tr>`
+  const bannerSection = safeBanner
+    ? `<tr><td style="border-radius:12px 12px 0 0;overflow:hidden;line-height:0;"><img src="${safeBanner}" alt="${programa}" style="width:100%;max-width:600px;height:auto;display:block;"/></td></tr>`
     : `<tr><td style="background:#0a1628;padding:32px 36px;border-radius:12px 12px 0 0;border-bottom:4px solid #f5a623;"><img src="https://merlin-global.com/assets/merlin-logo-BbzWVHUY.png" alt="Merlin" style="height:50px"><p style="margin:0;font-size:13px;font-weight:700;color:#f5a623;text-transform:uppercase;letter-spacing:2.5px;">${programa||'MDT'}</p></td></tr>`;
 
   // Contenido de texto
