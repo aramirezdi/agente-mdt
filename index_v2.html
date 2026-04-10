@@ -344,13 +344,9 @@ textarea{resize:vertical;line-height:1.6}
         <code onclick="insertVar('{{fecha_fin}}')" title="Clic para copiar" style="background:var(--surface);padding:2px 7px;border-radius:4px;font-size:11px;cursor:pointer;border:1px solid var(--border)">{{fecha_fin}}</code>
         <code onclick="insertVar('{{fecha_inicio}}')" title="Clic para copiar" style="background:var(--surface);padding:2px 7px;border-radius:4px;font-size:11px;cursor:pointer;border:1px solid var(--border)">{{fecha_inicio}}</code>
         <code onclick="insertVar('{{dias_disponibles}}')" title="Días que faltan hasta fecha_fin (calculado automáticamente)" style="background:var(--surface);padding:2px 7px;border-radius:4px;font-size:11px;cursor:pointer;border:1px solid var(--border)">{{dias_disponibles}}</code>
-        <code onclick="insertVar('{{evento}}')" title="Nombre del evento/tarea del formulario" style="background:var(--surface);padding:2px 7px;border-radius:4px;font-size:11px;cursor:pointer;border:1px solid var(--border);border-color:var(--purple-border);color:var(--purple)">{{evento}}</code>
-        <code onclick="insertVar('{{fecha_evento}}')" title="Fecha del formulario" style="background:var(--surface);padding:2px 7px;border-radius:4px;font-size:11px;cursor:pointer;border:1px solid var(--purple-border);color:var(--purple)">{{fecha_evento}}</code>
-        <code onclick="insertVar('{{hora_evento}}')" title="Hora del formulario" style="background:var(--surface);padding:2px 7px;border-radius:4px;font-size:11px;cursor:pointer;border:1px solid var(--purple-border);color:var(--purple)">{{hora_evento}}</code>
-        <code onclick="insertVar('{{link_evento}}')" title="Link del formulario" style="background:var(--surface);padding:2px 7px;border-radius:4px;font-size:11px;cursor:pointer;border:1px solid var(--purple-border);color:var(--purple)">{{link_evento}}</code>
-        <code onclick="insertVar('{{instrucciones}}')" title="Instrucciones del formulario" style="background:var(--surface);padding:2px 7px;border-radius:4px;font-size:11px;cursor:pointer;border:1px solid var(--purple-border);color:var(--purple)">{{instrucciones}}</code>
+        <span id="form-vars-chips"></span>
       </div>
-      <p style="font-size:10px;color:var(--purple);margin-bottom:10px">Variables en morado vienen del formulario de tipo de correo (fecha, hora, enlace, etc.).</p>
+      <p style="font-size:10px;color:var(--purple);margin-bottom:10px">Variables en morado vienen del formulario según el tipo de correo seleccionado.</p>
       <details style="margin-bottom:12px">
         <summary style="font-size:11px;color:var(--purple);cursor:pointer;font-weight:500">¿Cómo usar condicionales?</summary>
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px;margin-top:6px;font-size:11px;color:var(--muted);line-height:1.7">
@@ -920,6 +916,7 @@ function selType(t){
   document.getElementById('prev-subj').className='prev-box prev-subj empty';document.getElementById('prev-subj').textContent='El asunto aparecerá aquí...';
   const ph=document.getElementById('prev-html');ph.className='prev-box prev-html empty';ph.textContent='El correo HTML aparecerá aquí...';
   updateMethodInfo();
+  renderFormVarChips();
 }
 
 function updateMethodInfo(){
@@ -1250,6 +1247,53 @@ function parseDate(str){
   return isNaN(dt)?null:dt;
 }
 
+// ── Variables del formulario por tipo de correo ──
+const FORM_VARS={
+  masterclass:[
+    {v:'{{evento}}',      label:'Nombre masterclass'},
+    {v:'{{fecha_evento}}',label:'Fecha'},
+    {v:'{{hora_evento}}', label:'Hora'},
+    {v:'{{link_evento}}', label:'Link de acceso'},
+    {v:'{{instrucciones}}',label:'Instrucciones'},
+  ],
+  bienvenida:[
+    {v:'{{fecha_evento}}',label:'Fecha de inicio'},
+    {v:'{{link_evento}}', label:'Campus virtual'},
+    {v:'{{instrucciones}}',label:'Mensaje especial'},
+  ],
+  tarea:[
+    {v:'{{evento}}',      label:'Nombre de la tarea'},
+    {v:'{{fecha_evento}}',label:'Fecha límite'},
+    {v:'{{hora_evento}}', label:'Hora límite'},
+    {v:'{{link_evento}}', label:'Link de entrega'},
+    {v:'{{instrucciones}}',label:'Instrucciones adicionales'},
+  ],
+  seguimiento:[
+    {v:'{{instrucciones}}',label:'Notas adicionales'},
+  ],
+  certificado:[
+    {v:'{{evento}}',      label:'Módulo completado'},
+    {v:'{{fecha_evento}}',label:'Fecha de logro'},
+    {v:'{{link_evento}}', label:'Link al certificado'},
+    {v:'{{instrucciones}}',label:'Mensaje especial'},
+  ],
+  pago:[
+    {v:'{{fecha_evento}}',label:'Fecha límite de pago'},
+    {v:'{{link_evento}}', label:'Método/link de pago'},
+    {v:'{{tipo_cobro}}',  label:'Tipo de cobro'},
+    {v:'{{instrucciones}}',label:'Notas adicionales'},
+  ],
+};
+function renderFormVarChips(){
+  const el=document.getElementById('form-vars-chips');
+  if(!el) return;
+  const vars=FORM_VARS[currentType]||[];
+  const chipStyle='background:var(--surface);padding:2px 7px;border-radius:4px;font-size:11px;cursor:pointer;border:1px solid var(--purple-border);color:var(--purple)';
+  el.innerHTML=vars.map(({v,label})=>
+    `<code onclick="insertVar('${v}')" title="${label} — clic para copiar" style="${chipStyle}">${v} <span style="font-size:9px;opacity:.7">${label}</span></code>`
+  ).join('');
+}
+
 // ── Sustitución de variables para plantillas manuales ──
 function replaceVars(text,st,prog,f){
   f=f||{};
@@ -1275,7 +1319,8 @@ function replaceVars(text,st,prog,f){
     .replace(/\{\{fecha_evento\}\}/gi,f.fecha?fmtDate(f.fecha):'')
     .replace(/\{\{hora_evento\}\}/gi,f.hora||'')
     .replace(/\{\{link_evento\}\}/gi,f.link||'')
-    .replace(/\{\{instrucciones\}\}/gi,f.inst||'');
+    .replace(/\{\{instrucciones\}\}/gi,f.inst||'')
+    .replace(/\{\{tipo_cobro\}\}/gi,f.tipo||'');
 }
 
 // ── Motor de condicionales para plantillas manuales ──
@@ -1302,6 +1347,8 @@ function applyConditionals(text,st,prog){
   const diasDisp=(()=>{const fin=parseDate(st.fecha_fin);return fin?Math.max(0,Math.ceil((fin-new Date())/(1000*60*60*24))):0;})();
   const vals={
     nombre:st.n||'', correo:st.e||'', telefono:st.tel||'', programa:prog||'', modulo:st.modulo||'',
+    evento:f.nom||'', fecha_evento:f.fecha?fmtDate(f.fecha):'', hora_evento:f.hora||'',
+    link_evento:f.link||'', instrucciones:f.inst||'', tipo_cobro:f.tipo||'',
     avance:parseFloat(st.avance)||0, estado:st.estado||'', equipo:st.equipo||'',
     genero:st.genero||'', edad:parseFloat(st.edad)||0,
     pendientes:st.pendientes||'', dias_disponibles:diasDisp,
@@ -2105,6 +2152,7 @@ async function enviarWAMasivo(){
 
 load();
 selType('masterclass');
+renderFormVarChips();
 addSt('María Torres','maria@ejemplo.com',programs[0]);
 cargarHistorial();
 </script>
