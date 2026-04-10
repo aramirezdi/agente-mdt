@@ -299,17 +299,17 @@ textarea{resize:vertical;line-height:1.6}
   <div class="card">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
       <span class="card-ttl" style="margin:0">Vista previa HTML</span>
-      <span class="chip"><span class="dot"></span>Claude</span>
+      <span id="prev-mode-chip" class="chip"><span class="dot"></span>Claude</span>
     </div>
     <div class="brow" style="margin-bottom:12px">
-      <button class="btn btn-g btn-sm" onclick="preview()">Generar vista previa</button>
+      <button id="prev-btn" class="btn btn-g btn-sm" onclick="preview()">Generar vista previa</button>
       <span id="prev-st" style="font-size:12px;color:var(--muted)"></span>
     </div>
     <div class="prev-lbl">Asunto</div>
     <div id="prev-subj" class="prev-box prev-subj empty" style="margin-bottom:10px">El asunto aparecerá aquí...</div>
     <div class="prev-lbl">Correo renderizado</div>
     <div id="prev-html" class="prev-box prev-html empty">El correo HTML aparecerá aquí...</div>
-    <p style="font-size:11px;color:var(--hint);margin-top:7px">Vista previa del primer estudiante con su banner según programa y tipo.</p>
+    <p id="prev-hint" style="font-size:11px;color:var(--hint);margin-top:7px">Vista previa del primer estudiante con su banner según programa y tipo.</p>
   </div>
 
   <div class="card">
@@ -1132,10 +1132,25 @@ async function sendSendPulse(toEmail,toName,subject,htmlBody){
 // ── Preview ──
 async function preview(){
   const f=getF();const cfg=TIPOS[currentType];
-  const st=students.find(s=>s.e)||{n:'María Torres',e:'maria@ejemplo.com',p:programs[0]||'MDT',extra:''};
+  const st=students.find(s=>s.e)||{n:'María Torres',e:'maria@ejemplo.com',p:programs[0]||'MDT',extra:'',modulo:'',avance:'',estado:'',equipo:'',genero:'',edad:'',pendientes:'',ultimo_acceso:'',fecha_fin:'',fecha_inicio:''};
   const prog=st.p||f.prog||programs[0]||'';
   const bannerUrl=getBannerUrl(prog,currentType);
   const ps=document.getElementById('prev-st'),pa=document.getElementById('prev-subj'),pb=document.getElementById('prev-html');
+  if(modoEnvio==='manual'){
+    const manualAsunto=document.getElementById('manual-asunto')?.value.trim()||'';
+    const manualCuerpo=document.getElementById('manual-cuerpo')?.value.trim()||'';
+    if(!manualAsunto&&!manualCuerpo){
+      ps.innerHTML='<span style="color:var(--amber);font-size:12px">Escribe el asunto y el cuerpo primero.</span>';return;
+    }
+    const asunto=replaceVars(manualAsunto,st,prog);
+    const cuerpo=replaceVars(manualCuerpo,st,prog);
+    pa.className='prev-box prev-subj';pa.textContent=asunto||'(sin asunto)';
+    const previewHtml=buildHTML(st.n,cuerpo,bannerUrl,prog,{contentImg:getContentImgUrl()});
+    pb.className='prev-box prev-html';
+    pb.innerHTML=`<iframe srcdoc="${previewHtml.replace(/"/g,'&quot;')}" style="width:100%;border:none;border-radius:7px;min-height:400px;" onload="this.style.height=Math.min(this.contentDocument.body.scrollHeight+40,650)+'px'"></iframe>`;
+    ps.innerHTML=`<span style="color:var(--green);font-size:12px">Vista previa de: <strong>${st.n}</strong></span>`;
+    return;
+  }
   ps.innerHTML='<span style="display:inline-flex;gap:5px;align-items:center"><span class="spin" style="border-color:var(--purple);border-top-color:transparent"></span> Claude redactando...</span>';
   pa.className='prev-box prev-subj empty';pa.textContent='Generando...';
   pb.className='prev-box prev-html empty';pb.innerHTML='Generando...';
@@ -1181,6 +1196,26 @@ function insertVar(v){
   const el=event.target;const orig=el.style.background;
   el.style.background='var(--purple)';el.style.color='#fff';
   setTimeout(()=>{el.style.background=orig;el.style.color='';},600);
+}
+
+// ── Sustitución de variables para plantillas manuales ──
+function replaceVars(text,st,prog){
+  const diasDisp=st.fecha_fin?Math.max(0,Math.ceil((new Date(st.fecha_fin)-new Date())/(1000*60*60*24))):0;
+  return applyConditionals(text,st,prog)
+    .replace(/\{\{nombre\}\}/gi,st.n||'')
+    .replace(/\{\{correo\}\}/gi,st.e||'')
+    .replace(/\{\{programa\}\}/gi,prog||'')
+    .replace(/\{\{modulo\}\}/gi,st.modulo||'')
+    .replace(/\{\{avance\}\}/gi,st.avance||'')
+    .replace(/\{\{estado\}\}/gi,st.estado||'')
+    .replace(/\{\{equipo\}\}/gi,st.equipo||'')
+    .replace(/\{\{genero\}\}/gi,st.genero||'')
+    .replace(/\{\{edad\}\}/gi,st.edad||'')
+    .replace(/\{\{pendientes\}\}/gi,st.pendientes||'')
+    .replace(/\{\{ultimo_acceso\}\}/gi,st.ultimo_acceso||'')
+    .replace(/\{\{fecha_fin\}\}/gi,st.fecha_fin||'')
+    .replace(/\{\{fecha_inicio\}\}/gi,st.fecha_inicio||'')
+    .replace(/\{\{dias_disponibles\}\}/gi,String(diasDisp));
 }
 
 // ── Motor de condicionales para plantillas manuales ──
@@ -1237,6 +1272,24 @@ function setModo(m){
   document.getElementById('ab-active').closest('label').style.display=m==='manual'?'none':'flex';
   document.getElementById('ab-fields').style.display='none';
   if(m==='manual') document.getElementById('ab-active').checked=false;
+  // Actualizar card de vista previa
+  const chip=document.getElementById('prev-mode-chip');
+  const btn=document.getElementById('prev-btn');
+  const hint=document.getElementById('prev-hint');
+  if(m==='manual'){
+    if(chip) chip.innerHTML='<span class="dot" style="background:var(--amber)"></span>Manual';
+    if(btn) btn.textContent='Ver vista previa';
+    if(hint) hint.textContent='Vista previa del primer estudiante con tu plantilla manual.';
+  } else {
+    if(chip) chip.innerHTML='<span class="dot"></span>Claude';
+    if(btn) btn.textContent='Generar vista previa';
+    if(hint) hint.textContent='Vista previa del primer estudiante con su banner según programa y tipo.';
+  }
+  // Limpiar preview anterior al cambiar modo
+  const pa=document.getElementById('prev-subj'),pb=document.getElementById('prev-html'),ps=document.getElementById('prev-st');
+  if(pa){pa.className='prev-box prev-subj empty';pa.textContent='El asunto aparecerá aquí...';}
+  if(pb){pb.className='prev-box prev-html empty';pb.innerHTML='El correo HTML aparecerá aquí...';}
+  if(ps) ps.innerHTML='';
 }
 async function enviar(){
   const valid=students.filter(s=>s.n&&s.e);
@@ -1266,24 +1319,8 @@ async function enviar(){
       const trackId=(crypto.randomUUID||function(){return Math.random().toString(36).slice(2)+Date.now().toString(36)})().replace(/-/g,'');
       let asunto,cuerpo;
       if(esManual){
-        const diasDisp=st.fecha_fin?Math.max(0,Math.ceil((new Date(st.fecha_fin)-new Date())/(1000*60*60*24))):0;
-        const repl=(t)=>applyConditionals(t,st,prog)
-          .replace(/\{\{nombre\}\}/gi,st.n||'')
-          .replace(/\{\{correo\}\}/gi,st.e||'')
-          .replace(/\{\{programa\}\}/gi,prog||'')
-          .replace(/\{\{modulo\}\}/gi,st.modulo||'')
-          .replace(/\{\{avance\}\}/gi,st.avance||'')
-          .replace(/\{\{estado\}\}/gi,st.estado||'')
-          .replace(/\{\{equipo\}\}/gi,st.equipo||'')
-          .replace(/\{\{genero\}\}/gi,st.genero||'')
-          .replace(/\{\{edad\}\}/gi,st.edad||'')
-          .replace(/\{\{pendientes\}\}/gi,st.pendientes||'')
-          .replace(/\{\{ultimo_acceso\}\}/gi,st.ultimo_acceso||'')
-          .replace(/\{\{fecha_fin\}\}/gi,st.fecha_fin||'')
-          .replace(/\{\{fecha_inicio\}\}/gi,st.fecha_inicio||'')
-          .replace(/\{\{dias_disponibles\}\}/gi,String(diasDisp));
-        asunto=repl(manualAsunto);
-        cuerpo=repl(manualCuerpo);
+        asunto=replaceVars(manualAsunto,st,prog);
+        cuerpo=replaceVars(manualCuerpo,st,prog);
       } else {
         const abGroup=abActive?(i%2===0?'A':'B'):'';
         const abInst=abGroup==='A'?abInstA:abGroup==='B'?abInstB:'';
