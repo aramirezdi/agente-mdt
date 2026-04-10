@@ -214,7 +214,9 @@ textarea{resize:vertical;line-height:1.6}
   <div class="card">
     <div class="card-ttl">Tipo de correo</div>
     <div class="type-grid">
-      <div class="tc on" onclick="selType('masterclass')" id="tc-masterclass"><div class="tc-icon">📅</div><div class="tc-name">Confirmación Masterclass</div><div class="tc-desc">Asistencia a clases en vivo</div></div>
+      <div class="tc on" onclick="selType('masterclass')" id="tc-masterclass"><div class="tc-icon">📅</div><div class="tc-name">Confirmación Masterclass</div><div class="tc-desc">Confirmar asistencia al evento</div></div>
+      <div class="tc" onclick="selType('invitacion')" id="tc-invitacion"><div class="tc-icon">✉️</div><div class="tc-name">Invitación</div><div class="tc-desc">Invitar a evento o actividad</div></div>
+      <div class="tc" onclick="selType('confirmacion')" id="tc-confirmacion"><div class="tc-icon">✅</div><div class="tc-name">Confirmación de registro</div><div class="tc-desc">Registro a evento o programa</div></div>
       <div class="tc" onclick="selType('bienvenida')" id="tc-bienvenida"><div class="tc-icon">👋</div><div class="tc-name">Bienvenida</div><div class="tc-desc">Nuevos estudiantes</div></div>
       <div class="tc" onclick="selType('tarea')" id="tc-tarea"><div class="tc-icon">📝</div><div class="tc-name">Recordatorio de tarea</div><div class="tc-desc">Entregas y actividades</div></div>
       <div class="tc" onclick="selType('seguimiento')" id="tc-seguimiento"><div class="tc-icon">📊</div><div class="tc-name">Seguimiento</div><div class="tc-desc">Monitoreo de progreso</div></div>
@@ -675,6 +677,20 @@ const TIPOS={
     <div class="f1"><label>Link de acceso (opcional)</label><input id="f-link" placeholder="https://zoom.us/j/..."/></div>
     <div class="f1"><label>Instrucciones para Claude</label><textarea id="f-inst" rows="2" placeholder="Ej: Recordar conectarse 5 min antes."></textarea></div>`,
     prompt(st,f){return`Correo HTML de confirmación de asistencia a Masterclass.\nEstudiante: ${st.n} | Programa: ${st.p||f.prog} | Masterclass: ${f.nom}\nFecha: ${fmt(f.fecha)} | Hora: ${f.hora} Lima ${f.link?'| Link: '+f.link:''} ${f.inst?'| Notas: '+f.inst:''}`}},
+  invitacion:{label:'Invitación',title:'Datos del evento',cols:['Nombre','Correo','Programa'],
+    fields:`<div class="g2f"><div><label>Nombre del evento</label><input id="f-nom" placeholder="CYBERChallenge 2026"/></div><div><label>Programa</label><select id="f-prog-sel" onchange="document.getElementById('f-prog').value=this.value"></select></div></div>
+    <input type="hidden" id="f-prog"/>
+    <div class="g2f"><div><label>Fecha</label><input id="f-fecha" type="date"/></div><div><label>Hora</label><input id="f-hora" type="time" value="09:00"/></div></div>
+    <div class="f1"><label>Link para confirmar asistencia (opcional)</label><input id="f-link" placeholder="https://forms.gle/..."/></div>
+    <div class="f1"><label>Instrucciones o detalles adicionales</label><textarea id="f-inst" rows="2" placeholder="Ej: Evento presencial en Cisco Systems, Cra. 9 #115-06."></textarea></div>`,
+    prompt(st,f){return`Correo HTML de invitación a evento, entusiasta y motivador, que invite al estudiante a participar y a confirmar su asistencia.\nEstudiante: ${st.n} | Programa: ${st.p||f.prog} | Evento: ${f.nom}\nFecha: ${fmt(f.fecha)} | Hora: ${f.hora} ${f.link?'| Link para confirmar: '+f.link:''} ${f.inst?'| Detalles: '+f.inst:''}\nEl botón principal debe decir "Confirmar asistencia" y llevar al link de confirmación si existe.`}},
+  confirmacion:{label:'Confirmación de registro',title:'Datos del registro',cols:['Nombre','Correo','Programa'],
+    fields:`<div class="g2f"><div><label>Nombre del evento o programa</label><input id="f-nom" placeholder="HackaCYBER SED Bogotá 2026"/></div><div><label>Programa</label><select id="f-prog-sel" onchange="document.getElementById('f-prog').value=this.value"></select></div></div>
+    <input type="hidden" id="f-prog"/>
+    <div class="g2f"><div><label>Fecha del evento / inicio del programa</label><input id="f-fecha" type="date"/></div><div><label>Hora (si aplica)</label><input id="f-hora" type="time" value=""/></div></div>
+    <div class="f1"><label>Link de acceso o más información (opcional)</label><input id="f-link" placeholder="https://..."/></div>
+    <div class="f1"><label>Notas adicionales</label><textarea id="f-inst" rows="2" placeholder="Ej: Recibirás más detalles próximamente. Debes llevar tu documento de identidad."></textarea></div>`,
+    prompt(st,f){return`Correo HTML de confirmación de registro, cálido y profesional. El participante ya se inscribió y este correo confirma que su registro fue recibido exitosamente.\nEstudiante: ${st.n} | Programa: ${st.p||f.prog} | Evento/Programa: ${f.nom}\nFecha: ${fmt(f.fecha)} ${f.hora?'| Hora: '+f.hora:''} ${f.link?'| Link: '+f.link:''} ${f.inst?'| Notas: '+f.inst:''}\nTono: confirmación exitosa, emocionante, bienvenida. El participante debe sentir que tomó una gran decisión.`}},
   bienvenida:{label:'Bienvenida',title:'Datos del nuevo estudiante',cols:['Nombre','Correo','Programa'],
     fields:`<div class="g2f"><div><label>Programa</label><select id="f-prog-sel" onchange="document.getElementById('f-prog').value=this.value"></select></div><div><label>Fecha de inicio</label><input id="f-fecha" type="date"/></div></div>
     <input type="hidden" id="f-prog"/>
@@ -1255,6 +1271,20 @@ const FORM_VARS={
     {v:'{{hora_evento}}', label:'Hora'},
     {v:'{{link_evento}}', label:'Link de acceso'},
     {v:'{{instrucciones}}',label:'Instrucciones'},
+  ],
+  invitacion:[
+    {v:'{{evento}}',      label:'Nombre del evento'},
+    {v:'{{fecha_evento}}',label:'Fecha'},
+    {v:'{{hora_evento}}', label:'Hora'},
+    {v:'{{link_evento}}', label:'Link para confirmar'},
+    {v:'{{instrucciones}}',label:'Detalles adicionales'},
+  ],
+  confirmacion:[
+    {v:'{{evento}}',      label:'Nombre del evento/programa'},
+    {v:'{{fecha_evento}}',label:'Fecha'},
+    {v:'{{hora_evento}}', label:'Hora'},
+    {v:'{{link_evento}}', label:'Link de acceso'},
+    {v:'{{instrucciones}}',label:'Notas adicionales'},
   ],
   bienvenida:[
     {v:'{{fecha_evento}}',label:'Fecha de inicio'},
