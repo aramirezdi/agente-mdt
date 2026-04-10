@@ -1207,6 +1207,13 @@ function insertVar(v){
   setTimeout(()=>{el.style.background=orig;el.style.color='';},600);
 }
 
+// ── Formato de fecha para mostrar: siempre DD/MM/YYYY ──
+function fmtDate(str){
+  const d=parseDate(str);
+  if(!d||isNaN(d)) return str||'';
+  return d.toLocaleDateString('es-PE',{day:'2-digit',month:'2-digit',year:'numeric'});
+}
+
 // ── Parser de fechas flexible (DD/MM/YYYY, DD/MM/YY, YYYY-MM-DD, MM/DD/YYYY) ──
 function parseDate(str){
   if(!str) return null;
@@ -1241,8 +1248,8 @@ function replaceVars(text,st,prog){
     .replace(/\{\{edad\}\}/gi,st.edad||'')
     .replace(/\{\{pendientes\}\}/gi,st.pendientes||'')
     .replace(/\{\{ultimo_acceso\}\}/gi,st.ultimo_acceso||'')
-    .replace(/\{\{fecha_fin\}\}/gi,st.fecha_fin||'')
-    .replace(/\{\{fecha_inicio\}\}/gi,st.fecha_inicio||'')
+    .replace(/\{\{fecha_fin\}\}/gi,fmtDate(st.fecha_fin))
+    .replace(/\{\{fecha_inicio\}\}/gi,fmtDate(st.fecha_inicio))
     .replace(/\{\{dias_disponibles\}\}/gi,String(diasDisp));
 }
 
