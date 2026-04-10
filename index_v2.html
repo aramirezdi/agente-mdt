@@ -1295,12 +1295,12 @@ async function enviar(){
   const valid=students.filter(s=>s.n&&s.e);
   if(!valid.length){setSt('send-st','Agrega al menos un estudiante con nombre y correo.','warn');return;}
   const hasZepto=credsStatus.zeptomail||localStorage.getItem('mdt_zepto')||'';
-  const useZepto=hasZepto&&valid.length>20;
+  const useZepto=selectedService==='zeptomail'||(selectedService==='auto'&&hasZepto&&valid.length>20);
   const btn=document.getElementById('send-btn');btn.disabled=true;btn.textContent='Enviando...';
   document.getElementById('send-log').innerHTML='';
-  setSt('send-st',`<span class="spin"></span> Procesando ${valid.length} correo(s) via ${useZepto?'ZeptoMail':'Zoho'}...`,'info');
+  const via=useZepto?'ZeptoMail':'Zoho Mail';
+  setSt('send-st',`<span class="spin"></span> Procesando ${valid.length} correo(s) via ${via}...`,'info');
   const f=getF();const cfg=TIPOS[currentType];let ok=0,err=0;
-  // Modo manual: validar asunto y cuerpo
   const esManual=modoEnvio==='manual';
   const manualAsunto=document.getElementById('manual-asunto')?.value.trim()||'';
   const manualCuerpo=document.getElementById('manual-cuerpo')?.value.trim()||'';
@@ -1329,14 +1329,13 @@ async function enviar(){
         asunto=c.asunto;cuerpo=c.cuerpo;
         var abGroup_=abGroup;
       }
-      const html=buildHTML(st.n,cuerpo,bannerUrl,prog,{trackId});
+      const html=buildHTML(st.n,cuerpo,bannerUrl,prog,{trackId,contentImg:getContentImgUrl()});
       if(useZepto){await sendZeptoMail(st.e,st.n,asunto,html);}
       else{await sendZoho(st.e,asunto,html);}
       ok++;addLog(st.n,st.e,true,asunto,useZepto?'zepto':'zoho',asunto,cuerpo,{trackId,abGroup:abGroup_||'',prog:st.p||prog});
     }catch(e){err++;addLog(st.n,st.e,false,e.message?.slice(0,80)||'Error',useZepto?'zepto':'zoho','','',{abGroup:'',prog:st.p||''});}
   }
   btn.disabled=false;btn.textContent='Enviar a todos';
-  const via=useZepto?'ZeptoMail':'Zoho Mail';
   if(err===0)setSt('send-st',`${ok} correo(s) enviados desde support@mdt.edu.pe via ${via}`,'ok');
   else if(ok===0)setSt('send-st','No se pudo enviar ningún correo.','err');
   else setSt('send-st',`${ok} enviados, ${err} con error via ${via}.`,'warn');
@@ -1829,35 +1828,6 @@ async function cancelarProgramado(id){
   if(d.ok) cargarProgramados();
 }
 
-// ── Sobrescribir enviar() para usar selectedService ──
-const _origEnviar = window.enviar;
-window.enviar = async function(){
-  const valid=students.filter(s=>s.n&&s.e);
-  if(!valid.length){setSt('send-st','Agrega al menos un estudiante con nombre y correo.','warn');return;}
-  const hasZepto2=credsStatus.zeptomail||localStorage.getItem('mdt_zepto')||'';
-  const useZepto2 = selectedService==='zeptomail' ||
-    (selectedService==='auto' && hasZepto2 && valid.length>20);
-  const btn=document.getElementById('send-btn');btn.disabled=true;btn.textContent='Enviando...';
-  document.getElementById('send-log').innerHTML='';
-  const via=useZepto2?'ZeptoMail':'Zoho Mail';
-  setSt('send-st',`<span class="spin"></span> Procesando ${valid.length} correo(s) via ${via}...`,'info');
-  const f=getF();const cfg=TIPOS[currentType];let ok=0,err=0;
-  for(const st of valid){
-    try{
-      const prog=st.p||f.prog||programs[0]||'';
-      const bannerUrl=getBannerUrl(prog,currentType);
-      const c=await callClaude(cfg.prompt(st,f),bannerUrl,prog);
-      const htmlBody=buildHTML(st.n,c.cuerpo,bannerUrl,prog,{...c,contentImg:getContentImgUrl()});
-      if(useZepto2){await sendZeptoMail(st.e,st.n,c.asunto,htmlBody);}
-      else{await sendZoho(st.e,c.asunto,htmlBody);}
-      ok++;addLog(st.n,st.e,true,c.asunto,useZepto2?'zepto':'zoho',c.asunto,c.cuerpo);
-    }catch(e){err++;addLog(st.n,st.e,false,e.message?.slice(0,80)||'Error',useZepto2?'zepto':'zoho','','');}
-  }
-  btn.disabled=false;btn.textContent='Enviar ahora';
-  if(err===0)setSt('send-st',`${ok} correo(s) enviados via ${via}`,'ok');
-  else if(ok===0)setSt('send-st','No se pudo enviar ningún correo.','err');
-  else setSt('send-st',`${ok} enviados, ${err} con error via ${via}.`,'warn');
-};
 
 // ── Imagen de contenido ──
 function selContentImg(type){
