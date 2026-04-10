@@ -327,9 +327,22 @@ textarea{resize:vertical;line-height:1.6}
     </div>
     <!-- Editor manual -->
     <div id="manual-editor" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:14px">
-      <p style="font-size:11px;color:var(--muted);margin-bottom:10px">El mismo correo se enviará a todos. Puedes usar <code style="background:var(--surface);padding:1px 5px;border-radius:4px;font-size:11px">{{nombre}}</code> y <code style="background:var(--surface);padding:1px 5px;border-radius:4px;font-size:11px">{{programa}}</code> como variables personalizadas.</p>
-      <div class="f1"><label>Asunto</label><input id="manual-asunto" placeholder="Ej: ¡Te esperamos mañana en la MasterClass!"/></div>
-      <div class="f1"><label>Cuerpo del correo</label><textarea id="manual-cuerpo" rows="6" placeholder="Escribe el correo aquí. Usa {{nombre}} para el nombre del estudiante y {{programa}} para el programa."></textarea></div>
+      <p style="font-size:11px;color:var(--muted);margin-bottom:8px">El mismo correo se enviará a todos con los datos de cada estudiante reemplazados automáticamente. Variables disponibles:</p>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px">
+        <code onclick="insertVar('{{nombre}}')" title="Clic para copiar" style="background:var(--surface);padding:2px 7px;border-radius:4px;font-size:11px;cursor:pointer;border:1px solid var(--border)">{{nombre}}</code>
+        <code onclick="insertVar('{{programa}}')" title="Clic para copiar" style="background:var(--surface);padding:2px 7px;border-radius:4px;font-size:11px;cursor:pointer;border:1px solid var(--border)">{{programa}}</code>
+        <code onclick="insertVar('{{modulo}}')" title="Clic para copiar" style="background:var(--surface);padding:2px 7px;border-radius:4px;font-size:11px;cursor:pointer;border:1px solid var(--border)">{{modulo}}</code>
+        <code onclick="insertVar('{{avance}}')" title="Clic para copiar" style="background:var(--surface);padding:2px 7px;border-radius:4px;font-size:11px;cursor:pointer;border:1px solid var(--border)">{{avance}}</code>
+        <code onclick="insertVar('{{estado}}')" title="Clic para copiar" style="background:var(--surface);padding:2px 7px;border-radius:4px;font-size:11px;cursor:pointer;border:1px solid var(--border)">{{estado}}</code>
+        <code onclick="insertVar('{{equipo}}')" title="Clic para copiar" style="background:var(--surface);padding:2px 7px;border-radius:4px;font-size:11px;cursor:pointer;border:1px solid var(--border)">{{equipo}}</code>
+        <code onclick="insertVar('{{genero}}')" title="Clic para copiar" style="background:var(--surface);padding:2px 7px;border-radius:4px;font-size:11px;cursor:pointer;border:1px solid var(--border)">{{genero}}</code>
+        <code onclick="insertVar('{{edad}}')" title="Clic para copiar" style="background:var(--surface);padding:2px 7px;border-radius:4px;font-size:11px;cursor:pointer;border:1px solid var(--border)">{{edad}}</code>
+        <code onclick="insertVar('{{pendientes}}')" title="Clic para copiar" style="background:var(--surface);padding:2px 7px;border-radius:4px;font-size:11px;cursor:pointer;border:1px solid var(--border)">{{pendientes}}</code>
+        <code onclick="insertVar('{{ultimo_acceso}}')" title="Clic para copiar" style="background:var(--surface);padding:2px 7px;border-radius:4px;font-size:11px;cursor:pointer;border:1px solid var(--border)">{{ultimo_acceso}}</code>
+        <code onclick="insertVar('{{fecha_fin}}')" title="Clic para copiar" style="background:var(--surface);padding:2px 7px;border-radius:4px;font-size:11px;cursor:pointer;border:1px solid var(--border)">{{fecha_fin}}</code>
+      </div>
+      <div class="f1"><label>Asunto</label><input id="manual-asunto" placeholder="Ej: Tu avance en {{programa}}: {{avance}}% ¡Sigue así, {{nombre}}!"/></div>
+      <div class="f1"><label>Cuerpo del correo</label><textarea id="manual-cuerpo" rows="7" placeholder="Hola {{nombre}},&#10;&#10;Notamos que tu avance en {{programa}} es de {{avance}}% en el módulo {{modulo}}.&#10;&#10;Estado: {{estado}} | Equipo: {{equipo}}&#10;&#10;¡Cuenta con nosotros!"></textarea></div>
     </div>
     <!-- Selector de servicio -->
     <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center">
@@ -1146,6 +1159,14 @@ function toggleAB(){
   const on=document.getElementById('ab-active').checked;
   document.getElementById('ab-fields').style.display=on?'block':'none';
 }
+function insertVar(v){
+  // Copia la variable al portapapeles
+  navigator.clipboard?.writeText(v).catch(()=>{});
+  // Feedback visual breve
+  const el=event.target;const orig=el.style.background;
+  el.style.background='var(--purple)';el.style.color='#fff';
+  setTimeout(()=>{el.style.background=orig;el.style.color='';},600);
+}
 let modoEnvio='ia';
 function setModo(m){
   modoEnvio=m;
@@ -1187,9 +1208,20 @@ async function enviar(){
       const trackId=(crypto.randomUUID||function(){return Math.random().toString(36).slice(2)+Date.now().toString(36)})().replace(/-/g,'');
       let asunto,cuerpo;
       if(esManual){
-        // Reemplazar {{nombre}} y {{programa}} con datos reales
-        asunto=manualAsunto.replace(/\{\{nombre\}\}/gi,st.n).replace(/\{\{programa\}\}/gi,prog);
-        cuerpo=manualCuerpo.replace(/\{\{nombre\}\}/gi,st.n).replace(/\{\{programa\}\}/gi,prog);
+        const repl=(t)=>t
+          .replace(/\{\{nombre\}\}/gi,st.n||'')
+          .replace(/\{\{programa\}\}/gi,prog||'')
+          .replace(/\{\{modulo\}\}/gi,st.modulo||'')
+          .replace(/\{\{avance\}\}/gi,st.avance||'')
+          .replace(/\{\{estado\}\}/gi,st.estado||'')
+          .replace(/\{\{equipo\}\}/gi,st.equipo||'')
+          .replace(/\{\{genero\}\}/gi,st.genero||'')
+          .replace(/\{\{edad\}\}/gi,st.edad||'')
+          .replace(/\{\{pendientes\}\}/gi,st.pendientes||'')
+          .replace(/\{\{ultimo_acceso\}\}/gi,st.ultimo_acceso||'')
+          .replace(/\{\{fecha_fin\}\}/gi,st.fecha_fin||'');
+        asunto=repl(manualAsunto);
+        cuerpo=repl(manualCuerpo);
       } else {
         const abGroup=abActive?(i%2===0?'A':'B'):'';
         const abInst=abGroup==='A'?abInstA:abGroup==='B'?abInstB:'';
@@ -1269,6 +1301,7 @@ function importarHojas(){
     // Detectar índices de columnas por header
     let iNombre=0,iEmail=1,iPrograma=2,iExtra=3,iTel=-1,iDoc=-1;
     let iModulo=-1,iAvance=-1,iPendientes=-1,iUltimoAcceso=-1,iFechaFin=-1;
+    let iGenero=-1,iEdad=-1,iEquipo=-1,iEstado=-1;
     if(isHeader){
       firstRow.forEach((h,i)=>{
         const k=(h||'').toString().toLowerCase().trim().replace(/[^a-záéíóúñ%\s]/gi,'').trim();
@@ -1283,6 +1316,10 @@ function importarHojas(){
         else if(k.includes('último acceso')||k.includes('ultimo acceso')||k.includes('último')) iUltimoAcceso=i;
         else if(k.includes('fecha fin')||k.includes('fin')||k.includes('vencimiento')) iFechaFin=i;
         else if(k.includes('identidad')||k.includes('documento')||k.includes('cedula')||k.includes('cédula')||k.includes('dni')||k.includes('id')) iDoc=i;
+        else if(k.includes('género')||k.includes('genero')||k==='sexo') iGenero=i;
+        else if(k==='edad'||k.includes('años')) iEdad=i;
+        else if(k.includes('equipo')||k.includes('grupo')||k.includes('team')) iEquipo=i;
+        else if(k==='estado'||k.includes('estatus')||k.includes('status')) iEstado=i;
       });
     }
     dataRows.forEach(row=>{
@@ -1297,8 +1334,12 @@ function importarHojas(){
       const pendientes=iPendientes>=0?(row[iPendientes]||'').toString().trim():'';
       const ultimo_acceso=iUltimoAcceso>=0?(row[iUltimoAcceso]||'').toString().trim():'';
       const fecha_fin=iFechaFin>=0?(row[iFechaFin]||'').toString().trim():'';
+      const genero=iGenero>=0?(row[iGenero]||'').toString().trim():'';
+      const edad=iEdad>=0?(row[iEdad]||'').toString().trim():'';
+      const equipo=iEquipo>=0?(row[iEquipo]||'').toString().trim():'';
+      const estado=iEstado>=0?(row[iEstado]||'').toString().trim():'';
       if(n&&e&&e.includes('@')){
-        students.push({id:Date.now()+Math.random(),n,e,p,extra:x,tel,doc,modulo,avance,pendientes,ultimo_acceso,fecha_fin});
+        students.push({id:Date.now()+Math.random(),n,e,p,extra:x,tel,doc,modulo,avance,pendientes,ultimo_acceso,fecha_fin,genero,edad,equipo,estado});
         count++;
       }
     });
