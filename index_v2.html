@@ -340,6 +340,8 @@ textarea{resize:vertical;line-height:1.6}
         <code onclick="insertVar('{{pendientes}}')" title="Clic para copiar" style="background:var(--surface);padding:2px 7px;border-radius:4px;font-size:11px;cursor:pointer;border:1px solid var(--border)">{{pendientes}}</code>
         <code onclick="insertVar('{{ultimo_acceso}}')" title="Clic para copiar" style="background:var(--surface);padding:2px 7px;border-radius:4px;font-size:11px;cursor:pointer;border:1px solid var(--border)">{{ultimo_acceso}}</code>
         <code onclick="insertVar('{{fecha_fin}}')" title="Clic para copiar" style="background:var(--surface);padding:2px 7px;border-radius:4px;font-size:11px;cursor:pointer;border:1px solid var(--border)">{{fecha_fin}}</code>
+        <code onclick="insertVar('{{fecha_inicio}}')" title="Clic para copiar" style="background:var(--surface);padding:2px 7px;border-radius:4px;font-size:11px;cursor:pointer;border:1px solid var(--border)">{{fecha_inicio}}</code>
+        <code onclick="insertVar('{{dias_disponibles}}')" title="Días que faltan hasta fecha_fin (calculado automáticamente)" style="background:var(--surface);padding:2px 7px;border-radius:4px;font-size:11px;cursor:pointer;border:1px solid var(--border)">{{dias_disponibles}}</code>
       </div>
       <div class="f1"><label>Asunto</label><input id="manual-asunto" placeholder="Ej: Tu avance en {{programa}}: {{avance}}% ¡Sigue así, {{nombre}}!"/></div>
       <div class="f1"><label>Cuerpo del correo</label><textarea id="manual-cuerpo" rows="7" placeholder="Hola {{nombre}},&#10;&#10;Notamos que tu avance en {{programa}} es de {{avance}}% en el módulo {{modulo}}.&#10;&#10;Estado: {{estado}} | Equipo: {{equipo}}&#10;&#10;¡Cuenta con nosotros!"></textarea></div>
@@ -1219,7 +1221,9 @@ async function enviar(){
           .replace(/\{\{edad\}\}/gi,st.edad||'')
           .replace(/\{\{pendientes\}\}/gi,st.pendientes||'')
           .replace(/\{\{ultimo_acceso\}\}/gi,st.ultimo_acceso||'')
-          .replace(/\{\{fecha_fin\}\}/gi,st.fecha_fin||'');
+          .replace(/\{\{fecha_fin\}\}/gi,st.fecha_fin||'')
+          .replace(/\{\{fecha_inicio\}\}/gi,st.fecha_inicio||'')
+          .replace(/\{\{dias_disponibles\}\}/gi,(()=>{if(!st.fecha_fin)return'';const d=Math.ceil((new Date(st.fecha_fin)-new Date())/(1000*60*60*24));return d>0?String(d):'0';})());
         asunto=repl(manualAsunto);
         cuerpo=repl(manualCuerpo);
       } else {
@@ -1300,7 +1304,7 @@ function importarHojas(){
     const dataRows=isHeader?rows.slice(1):rows;
     // Detectar índices de columnas por header
     let iNombre=0,iEmail=1,iPrograma=2,iExtra=3,iTel=-1,iDoc=-1;
-    let iModulo=-1,iAvance=-1,iPendientes=-1,iUltimoAcceso=-1,iFechaFin=-1;
+    let iModulo=-1,iAvance=-1,iPendientes=-1,iUltimoAcceso=-1,iFechaFin=-1,iFechaInicio=-1;
     let iGenero=-1,iEdad=-1,iEquipo=-1,iEstado=-1;
     if(isHeader){
       firstRow.forEach((h,i)=>{
@@ -1314,7 +1318,8 @@ function importarHojas(){
         else if(k.includes('avance')||k.includes('progreso')||k==='%') iAvance=i;
         else if(k.includes('pendiente')) iPendientes=i;
         else if(k.includes('último acceso')||k.includes('ultimo acceso')||k.includes('último')) iUltimoAcceso=i;
-        else if(k.includes('fecha fin')||k.includes('fin')||k.includes('vencimiento')) iFechaFin=i;
+        else if(k.includes('fecha fin')||k==='fin'||k.includes('vencimiento')) iFechaFin=i;
+        else if(k.includes('fecha inicio')||k==='inicio'||k.includes('fecha de inicio')) iFechaInicio=i;
         else if(k.includes('identidad')||k.includes('documento')||k.includes('cedula')||k.includes('cédula')||k.includes('dni')||k.includes('id')) iDoc=i;
         else if(k.includes('género')||k.includes('genero')||k==='sexo') iGenero=i;
         else if(k==='edad'||k.includes('años')) iEdad=i;
@@ -1334,12 +1339,13 @@ function importarHojas(){
       const pendientes=iPendientes>=0?(row[iPendientes]||'').toString().trim():'';
       const ultimo_acceso=iUltimoAcceso>=0?(row[iUltimoAcceso]||'').toString().trim():'';
       const fecha_fin=iFechaFin>=0?(row[iFechaFin]||'').toString().trim():'';
+      const fecha_inicio=iFechaInicio>=0?(row[iFechaInicio]||'').toString().trim():'';
       const genero=iGenero>=0?(row[iGenero]||'').toString().trim():'';
       const edad=iEdad>=0?(row[iEdad]||'').toString().trim():'';
       const equipo=iEquipo>=0?(row[iEquipo]||'').toString().trim():'';
       const estado=iEstado>=0?(row[iEstado]||'').toString().trim():'';
       if(n&&e&&e.includes('@')){
-        students.push({id:Date.now()+Math.random(),n,e,p,extra:x,tel,doc,modulo,avance,pendientes,ultimo_acceso,fecha_fin,genero,edad,equipo,estado});
+        students.push({id:Date.now()+Math.random(),n,e,p,extra:x,tel,doc,modulo,avance,pendientes,ultimo_acceso,fecha_fin,fecha_inicio,genero,edad,equipo,estado});
         count++;
       }
     });
