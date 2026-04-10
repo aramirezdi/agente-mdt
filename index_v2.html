@@ -1316,7 +1316,7 @@ async function enviar(){
     try{
       const prog=st.p||f.prog||programs[0]||'';
       const bannerUrl=getBannerUrl(prog,currentType);
-      const trackId=(crypto.randomUUID||function(){return Math.random().toString(36).slice(2)+Date.now().toString(36)})().replace(/-/g,'');
+      const trackId=crypto.randomUUID ? crypto.randomUUID().replace(/-/g,'') : Math.random().toString(36).slice(2)+Date.now().toString(36);
       let asunto,cuerpo;
       if(esManual){
         asunto=replaceVars(manualAsunto,st,prog);
