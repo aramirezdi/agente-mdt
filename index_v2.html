@@ -1097,7 +1097,7 @@ function switchTab(t,btn){
   btn.classList.add('on');document.getElementById('tab-'+t).classList.add('on');
   if(t==='banners'){cargarBanners();}
   if(t==='programados') cargarProgramados();
-  if(t==='historial') renderHist();
+  if(t==='historial') cargarHistorial().then(()=>renderHist());
   if(t==='whatsapp') initWA();
   if(t==='dashboard') loadDashboard();
 }
@@ -1962,7 +1962,7 @@ function setBannerFromSelect(prog,tipo,url){
   banners[prog][tipo]=url;saveBanners();renderBannersAssignment();
 }
 function _lsHistLoad(){try{return JSON.parse(localStorage.getItem('mdt_hist')||'[]');}catch{return[];}}
-function _lsHistSave(arr){try{localStorage.setItem('mdt_hist',JSON.stringify(arr.slice(-500)));}catch{}}
+function _lsHistSave(arr){try{localStorage.setItem('mdt_hist',JSON.stringify(arr.slice(-5000)));}catch{}}
 function addLog(n,e,ok,det,via,asunto,cuerpo,extra){
   const t=new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
   const ts=new Date().toLocaleDateString('es-PE',{day:'2-digit',month:'2-digit',year:'numeric'})+' '+t;
