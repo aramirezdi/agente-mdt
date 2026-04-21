@@ -607,14 +607,37 @@ textarea{resize:vertical;line-height:1.6}
 <!-- TAB Historial -->
 <div id="tab-historial" class="sec">
   <div class="card">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px">
       <span class="card-ttl" style="margin:0">Historial de correos</span>
-      <div class="brow">
+      <div class="brow" style="flex-wrap:wrap;gap:6px">
         <button class="btn btn-g btn-sm" onclick="filtrarHist('all')" id="filt-all" style="border-color:var(--purple);color:var(--purple)">Todos</button>
         <button class="btn btn-g btn-sm" onclick="filtrarHist('ok')" id="filt-ok">Enviados</button>
         <button class="btn btn-g btn-sm" onclick="filtrarHist('err')" id="filt-err">Con error</button>
         <button class="btn btn-g btn-sm" onclick="limpiarHist()" style="color:var(--red)">Limpiar</button>
+        <button class="btn btn-g btn-sm" onclick="imprimirHistorial()" style="border-color:var(--green);color:var(--green)">🖨 Imprimir / PDF</button>
       </div>
+    </div>
+    <!-- Filtros adicionales -->
+    <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-bottom:14px;padding:12px;background:var(--surface2);border-radius:8px;border:1px solid var(--border)">
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <label style="font-size:11px;color:var(--muted)">Desde</label>
+        <input type="date" id="hist-fecha-desde" onchange="renderHist()" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--fg);padding:5px 8px;font-size:12px"/>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <label style="font-size:11px;color:var(--muted)">Hasta</label>
+        <input type="date" id="hist-fecha-hasta" onchange="renderHist()" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--fg);padding:5px 8px;font-size:12px"/>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <label style="font-size:11px;color:var(--muted)">Servicio</label>
+        <select id="hist-servicio" onchange="renderHist()" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--fg);padding:5px 8px;font-size:12px">
+          <option value="all">Todos</option>
+          <option value="zepto">ZeptoMail</option>
+          <option value="zoho">Zoho</option>
+          <option value="sp">SendPulse</option>
+        </select>
+      </div>
+      <button class="btn btn-g btn-sm" onclick="limpiarFiltrosFecha()" style="margin-top:16px">Limpiar filtros</button>
+      <span id="hist-contador" style="font-size:12px;color:var(--muted);margin-top:16px"></span>
     </div>
     <div id="hist"></div>
   </div>
@@ -1633,15 +1656,6 @@ async function enviar(){
   else setSt('send-st',`${ok} enviados, ${err} con error via ${via}.`,'warn');
 }
 
-function renderHist(){
-  const el=document.getElementById('hist');
-  if(!historial.length){el.innerHTML='<p style="font-size:13px;color:var(--hint);font-style:italic">Aún no se han enviado correos.</p>';return;}
-  el.innerHTML=historial.map(h=>{
-    const badge=h.via==='zepto'?'<span class="mb mb-sp">ZeptoMail</span>':h.via==='sp'?'<span class="mb mb-sp">SendPulse</span>':'<span class="mb mb-zoho">Zoho</span>';
-    return`<div class="lr ${h.ok?'ok':'err'}" style="margin-bottom:7px"><span class="lt">${h.t}</span><span>[${TIPOS[h.tipo]?.label||h.tipo}] ${badge} ${h.ok?'Enviado':'Error'} — <strong>${h.n}</strong> &lt;${h.e}&gt;${h.det?' — '+h.det:''}</span></div>`;
-  }).join('');
-}
-
 // ── Excel ──
 let excelWorkbook = null;
 
@@ -2013,11 +2027,35 @@ function limpiarHist(){
   apiPost('/api/history-save',{entries:[]}).catch(()=>{});
   renderHist();
 }
-function renderHist(){
-  const el=document.getElementById('hist');
-  let entries=[...historialCompleto];
+function _histGetFiltros(){
+  const desde=(document.getElementById('hist-fecha-desde')?.value||'').trim();
+  const hasta=(document.getElementById('hist-fecha-hasta')?.value||'').trim();
+  const svc=(document.getElementById('hist-servicio')?.value||'all');
+  return{desde,hasta,svc};
+}
+function limpiarFiltrosFecha(){
+  const d=document.getElementById('hist-fecha-desde');
+  const h=document.getElementById('hist-fecha-hasta');
+  const s=document.getElementById('hist-servicio');
+  if(d) d.value='';
+  if(h) h.value='';
+  if(s) s.value='all';
+  renderHist();
+}
+function _histApplyFiltros(entries){
+  const{desde,hasta,svc}=_histGetFiltros();
   if(historialFiltro==='ok') entries=entries.filter(h=>h.ok);
   if(historialFiltro==='err') entries=entries.filter(h=>!h.ok);
+  if(desde) entries=entries.filter(h=>(h.ts||h.t||'')>=desde);
+  if(hasta) entries=entries.filter(h=>(h.ts||h.t||'')<=hasta+'T23:59:59');
+  if(svc!=='all') entries=entries.filter(h=>(h.via||'zoho')===svc);
+  return entries;
+}
+function renderHist(){
+  const el=document.getElementById('hist');
+  let entries=_histApplyFiltros([...historialCompleto]);
+  const ctr=document.getElementById('hist-contador');
+  if(ctr) ctr.textContent=entries.length+' registro(s)';
   if(!entries.length){el.innerHTML='<p style="font-size:13px;color:var(--hint);font-style:italic">Sin correos en el historial.</p>';return;}
   el.innerHTML=entries.reverse().map(h=>{
     const badge=h.via==='zepto'?'<span class="mb mb-sp">ZeptoMail</span>':h.via==='sp'?'<span class="mb mb-sp">SendPulse</span>':'<span class="mb mb-zoho">Zoho</span>';
@@ -2033,6 +2071,58 @@ function renderHist(){
       ${!h.ok&&h.det?`<div class="hist-detail" style="color:var(--red)">${h.det}</div>`:''}
     </div>`;
   }).join('');
+}
+function imprimirHistorial(){
+  let entries=_histApplyFiltros([...historialCompleto]);
+  entries=entries.reverse();
+  const{desde,hasta,svc}=_histGetFiltros();
+  const svcLabel={'all':'Todos','zepto':'ZeptoMail','zoho':'Zoho','sp':'SendPulse'}[svc]||svc;
+  const estadoLabel={'all':'Todos','ok':'Enviados','err':'Con error'}[historialFiltro]||'Todos';
+  const filtroInfo=[
+    desde?'Desde: '+desde:'',
+    hasta?'Hasta: '+hasta:'',
+    svc!=='all'?'Servicio: '+svcLabel:'',
+    historialFiltro!=='all'?'Estado: '+estadoLabel:''
+  ].filter(Boolean).join(' · ')||'Sin filtros adicionales';
+  const rows=entries.map((h,i)=>{
+    const via=h.via==='zepto'?'ZeptoMail':h.via==='sp'?'SendPulse':'Zoho';
+    const estado=h.ok?'✓ Enviado':'✗ Error';
+    const color=h.ok?'#1a7a4a':'#c0392b';
+    return`<tr style="background:${i%2===0?'#f9f9f9':'#fff'}">
+      <td style="padding:6px 8px;border:1px solid #ddd;font-size:12px;white-space:nowrap">${(h.ts||h.t||'').replace('T',' ').substring(0,19)}</td>
+      <td style="padding:6px 8px;border:1px solid #ddd;font-size:12px">${h.n||''}</td>
+      <td style="padding:6px 8px;border:1px solid #ddd;font-size:12px">${h.e||''}</td>
+      <td style="padding:6px 8px;border:1px solid #ddd;font-size:12px">${h.asunto||''}</td>
+      <td style="padding:6px 8px;border:1px solid #ddd;font-size:12px;text-align:center">${via}</td>
+      <td style="padding:6px 8px;border:1px solid #ddd;font-size:12px;text-align:center;color:${color};font-weight:600">${estado}</td>
+    </tr>`;
+  }).join('');
+  const w=window.open('','_blank','width=900,height=700');
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"/>
+  <title>Historial de correos — MDT Agent</title>
+  <style>
+    body{font-family:Arial,sans-serif;margin:20px;color:#222}
+    h1{font-size:18px;margin-bottom:4px}
+    .meta{font-size:12px;color:#666;margin-bottom:16px}
+    table{width:100%;border-collapse:collapse}
+    th{background:#1a1a2e;color:#fff;padding:8px;font-size:12px;text-align:left;border:1px solid #ddd}
+    @media print{.no-print{display:none}button{display:none}}
+  </style>
+  </head><body>
+  <div class="no-print" style="margin-bottom:16px">
+    <button onclick="window.print()" style="background:#1a1a2e;color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:13px">🖨 Imprimir / Guardar PDF</button>
+    <button onclick="window.close()" style="background:#eee;color:#333;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:13px;margin-left:8px">Cerrar</button>
+  </div>
+  <h1>Historial de correos — MDT Agent</h1>
+  <div class="meta">Generado: ${new Date().toLocaleString('es-ES')} · ${filtroInfo} · Total: ${entries.length} registro(s)</div>
+  <table>
+    <thead><tr>
+      <th>Fecha/Hora</th><th>Nombre</th><th>Email</th><th>Asunto</th><th>Servicio</th><th>Estado</th>
+    </tr></thead>
+    <tbody>${rows||'<tr><td colspan="6" style="text-align:center;padding:20px;color:#999">Sin registros</td></tr>'}</tbody>
+  </table>
+  </body></html>`);
+  w.document.close();
 }
 function abrirResend(entryStr){
   currentResendEntry=JSON.parse(entryStr);
