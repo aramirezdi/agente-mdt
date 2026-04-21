@@ -1962,7 +1962,13 @@ function setBannerFromSelect(prog,tipo,url){
   banners[prog][tipo]=url;saveBanners();renderBannersAssignment();
 }
 function _lsHistLoad(){try{return JSON.parse(localStorage.getItem('mdt_hist')||'[]');}catch{return[];}}
-function _lsHistSave(arr){try{localStorage.setItem('mdt_hist',JSON.stringify(arr.slice(-5000)));}catch{}}
+function _lsHistSave(arr){
+  try{
+    // Guardar sin cuerpo para evitar overflow de localStorage (cuerpo puede ser >100KB por email)
+    const slim=arr.slice(-5000).map(({cuerpo,...h})=>h);
+    localStorage.setItem('mdt_hist',JSON.stringify(slim));
+  }catch(e){console.warn('localStorage hist error:',e);}
+}
 function addLog(n,e,ok,det,via,asunto,cuerpo,extra){
   const t=new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
   const ts=new Date().toLocaleDateString('es-PE',{day:'2-digit',month:'2-digit',year:'numeric'})+' '+t;
@@ -1975,17 +1981,23 @@ function addLog(n,e,ok,det,via,asunto,cuerpo,extra){
   apiPost('/api/history-save',{entries:[entry]}).catch(()=>{});
 }
 async function cargarHistorial(){
-  // localStorage es la fuente principal (persiste entre deploys de Railway)
   const local=_lsHistLoad();
+  // Mantener entradas en memoria de la sesión actual (tienen cuerpo para reenvío)
+  const map=new Map();
+  // 1. Cargar localStorage
+  local.forEach(h=>map.set((h.ts||'')+(h.e||''),h));
+  // 2. Sobreescribir/enriquecer con entradas en memoria (sesión actual, tienen cuerpo)
+  historialCompleto.forEach(h=>map.set((h.ts||'')+(h.e||''),h));
   try{
+    // 3. Merge con server
     const d=await apiPost('/api/history-load',{});
     const server=d.entries||[];
-    // Merge: combinar ambos, deduplicar por ts+e, ordenar por ts
-    const map=new Map();
-    [...local,...server].forEach(h=>map.set((h.ts||'')+(h.e||''),h));
-    historialCompleto=[...map.values()].sort((a,b)=>(a.ts||'').localeCompare(b.ts||''));
-    _lsHistSave(historialCompleto);
-  }catch{historialCompleto=local;}
+    server.forEach(h=>{ if(!map.has((h.ts||'')+(h.e||''))) map.set((h.ts||'')+(h.e||''),h); });
+  }catch(e){console.warn('history-load error:',e);}
+  historialCompleto=[...map.values()].sort((a,b)=>(a.ts||'').localeCompare(b.ts||''));
+  // Limpiar localStorage y guardar versión actualizada sin cuerpo
+  localStorage.removeItem('mdt_hist');
+  _lsHistSave(historialCompleto);
 }
 function filtrarHist(f){
   historialFiltro=f;
