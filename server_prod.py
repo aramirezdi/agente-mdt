@@ -639,6 +639,36 @@ class Handler(BaseHTTPRequestHandler):
             {"Content-Type":"application/json","Authorization":auth}
         )
         print(f"  Zepto response: {str(r)[:300]}")
+
+        # Guardar en historial
+        ok = not r.get("error") and not r.get("message","").lower().startswith("request denied")
+        entry = {
+            "ts":       datetime.now().isoformat(),
+            "n":        to_name,
+            "e":        to_email,
+            "prog":     p.get("prog",""),
+            "ok":       ok,
+            "asunto":   subject,
+            "tipo":     p.get("tipo","[Seguimiento]"),
+            "via":      "zeptomail",
+            "track_id": "",
+            "opened":   False,
+            "ab_group": "",
+        }
+        if not ok:
+            entry["det"] = str(r.get("error") or r.get("message","Error desconocido"))
+        try:
+            existing = []
+            if os.path.exists(HISTORY_FILE):
+                with open(HISTORY_FILE,"r") as f:
+                    existing = json.load(f)
+            existing.append(entry)
+            existing = existing[-5000:]
+            with open(HISTORY_FILE,"w") as f:
+                json.dump(existing, f, ensure_ascii=False)
+        except Exception as he:
+            print(f"  Historial error: {he}")
+
         self.send_json(r)
 
     # ── Banners ──
@@ -936,7 +966,7 @@ def execute_scheduled_task(task):
             with open(HISTORY_FILE,"r") as f:
                 existing = json.load(f)
         existing.extend(history)
-        existing = existing[-500:]
+        existing = existing[-10000:]
         with open(HISTORY_FILE,"w") as f:
             json.dump(existing, f, ensure_ascii=False)
     print(f"  Resultado: {ok_count} enviados, {err_count} errores")
