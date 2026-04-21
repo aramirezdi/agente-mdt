@@ -1637,7 +1637,7 @@ function renderHist(){
   const el=document.getElementById('hist');
   if(!historial.length){el.innerHTML='<p style="font-size:13px;color:var(--hint);font-style:italic">Aún no se han enviado correos.</p>';return;}
   el.innerHTML=historial.map(h=>{
-    const badge=h.via==='zepto'?'<span class="mb mb-sp">ZeptoMail</span>':via==='sp'?'<span class="mb mb-sp">SendPulse</span>':'<span class="mb mb-zoho">Zoho</span>';
+    const badge=h.via==='zepto'?'<span class="mb mb-sp">ZeptoMail</span>':h.via==='sp'?'<span class="mb mb-sp">SendPulse</span>':'<span class="mb mb-zoho">Zoho</span>';
     return`<div class="lr ${h.ok?'ok':'err'}" style="margin-bottom:7px"><span class="lt">${h.t}</span><span>[${TIPOS[h.tipo]?.label||h.tipo}] ${badge} ${h.ok?'Enviado':'Error'} — <strong>${h.n}</strong> &lt;${h.e}&gt;${h.det?' — '+h.det:''}</span></div>`;
   }).join('');
 }
@@ -2008,7 +2008,7 @@ function renderHist(){
   if(historialFiltro==='err') entries=entries.filter(h=>!h.ok);
   if(!entries.length){el.innerHTML='<p style="font-size:13px;color:var(--hint);font-style:italic">Sin correos en el historial.</p>';return;}
   el.innerHTML=entries.reverse().map(h=>{
-    const badge=h.via==='zepto'?'<span class="mb mb-sp">ZeptoMail</span>':via==='sp'?'<span class="mb mb-sp">SendPulse</span>':'<span class="mb mb-zoho">Zoho</span>';
+    const badge=h.via==='zepto'?'<span class="mb mb-sp">ZeptoMail</span>':h.via==='sp'?'<span class="mb mb-sp">SendPulse</span>':'<span class="mb mb-zoho">Zoho</span>';
     const safeH=encodeURIComponent(JSON.stringify(h));
     const resendBtn=`<button class="resend-btn" onclick="abrirResend(decodeURIComponent('${safeH}'))">↩ Reenviar</button>`;
     return`<div class="lr ${h.ok?'ok':'err'}" style="margin-bottom:8px;flex-direction:column;align-items:flex-start">
