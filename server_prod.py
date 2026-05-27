@@ -311,7 +311,7 @@ class Handler(BaseHTTPRequestHandler):
     var u=JSON.parse(sessionStorage.getItem('mdt_user')||'{}');
     document.addEventListener('DOMContentLoaded',function(){
       var h=document.querySelector('.hdr p');
-      if(h&&u.name) h.innerHTML+=' - <span style="color:#7c6ffc">'+u.name+'</span> <button onclick="logout()" style="background:none;border:none;color:#8a8aaa;cursor:pointer;font-size:12px;margin-left:4px">[Salir]</button>';
+      if(h&&u.name) h.innerHTML+=' - <span style="color:#3B82F6">'+u.name+'</span> <button onclick="logout()" style="background:none;border:none;color:#8a8aaa;cursor:pointer;font-size:12px;margin-left:4px">[Salir]</button>';
     });
   }catch(e){}
   window.logout=function(){

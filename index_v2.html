@@ -4,16 +4,16 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Agente MDT — Comunicaciones</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
 <style>
 :root{
-  --bg:#0f0f12;--surface:#18181e;--surface2:#202028;--border:#2a2a36;--border2:#3a3a48;
-  --text:#eeeef5;--muted:#8a8aaa;--hint:#4a4a62;
-  --purple:#7c6ffc;--purple-bg:rgba(124,111,252,0.1);--purple-border:#3d3880;
+  --bg:#0d1117;--surface:#161b22;--surface2:#1e2530;--border:#2a3340;--border2:#3a4455;
+  --text:#eeeef5;--muted:#8a9ab5;--hint:#4a5568;
+  --purple:#3B82F6;--purple-bg:rgba(59,130,246,0.1);--purple-border:#1d3f7a;
   --green:#3ecf8e;--green-bg:#0e2e20;--green-border:#1a5a38;
-  --amber:#f5a623;--amber-bg:#2e1e08;--amber-border:#5a3c10;
+  --amber:#E9721F;--amber-bg:#2a1608;--amber-border:#5a2e0a;
   --red:#f05252;--red-bg:#2e0e0e;--red-border:#5a2020;
-  --r:10px;--font:'DM Sans',sans-serif;--mono:'DM Mono',monospace;
+  --r:10px;--font:'Poppins',sans-serif;--mono:'Inter',sans-serif;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;padding:32px 20px}
@@ -142,13 +142,33 @@ textarea{resize:vertical;line-height:1.6}
 .prog-status-error{color:var(--red)}
 #resend-modal.show{display:flex}
 .hist-detail{font-size:11px;color:var(--muted);margin-top:4px;font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:400px}
+/* ── Rich Text Editor ── */
+.rte-wrap{border:1px solid var(--border);border-radius:7px;overflow:hidden}
+.rte-wrap:focus-within{border-color:var(--purple)}
+.rte-toolbar{display:flex;flex-wrap:wrap;gap:2px;padding:5px 7px;background:var(--surface);border-bottom:1px solid var(--border);align-items:center}
+.rte-btn{display:inline-flex;align-items:center;justify-content:center;min-width:27px;height:26px;padding:0 4px;border:none;background:none;color:var(--text);cursor:pointer;border-radius:4px;font-size:12px;font-family:var(--font);font-weight:600;transition:background .12s;white-space:nowrap;flex-shrink:0}
+.rte-btn:hover{background:var(--surface2)}.rte-btn.on{background:var(--purple-bg);color:var(--purple)}
+.rte-sep{width:1px;height:18px;background:var(--border);margin:0 3px;flex-shrink:0;align-self:center}
+.rte-sel{padding:2px 5px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:var(--font);font-size:11px;outline:none;height:26px;cursor:pointer;max-width:88px}
+.rte-sel:focus{border-color:var(--purple)}
+.rte-clr-btn{position:relative;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;min-width:27px;height:26px;border:none;background:none;cursor:pointer;border-radius:4px;padding:3px 4px;transition:background .12s}
+.rte-clr-btn:hover{background:var(--surface2)}
+.rte-clr-btn input[type=color]{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;border:none}
+.rte-clr-bar{display:block;width:18px;height:3px;border-radius:1px;margin-top:2px}
+.rte-editor{min-height:160px;max-height:400px;padding:12px 14px;background:var(--surface2);color:var(--text);font-family:Arial,sans-serif;font-size:14px;line-height:1.75;outline:none;overflow-y:auto;word-break:break-word}
+.rte-editor:empty:before{content:attr(data-placeholder);color:var(--hint);pointer-events:none;white-space:pre-wrap}
+.rte-editor p{margin:0 0 8px}.rte-editor ul,.rte-editor ol{padding-left:22px;margin:0 0 8px}
+.rte-editor a{color:#3B82F6;text-decoration:underline}.rte-editor img{max-width:100%;border-radius:6px}
+.rte-editor table{width:100%;border-collapse:collapse;margin:8px 0}.rte-editor td,.rte-editor th{border:1px solid #555;padding:5px 9px}
 </style>
 </head>
 <body>
 <div class="wrap">
 
 <div class="hdr">
-  <img src="https://merlin-global.com/assets/merlin-logo-BbzWVHUY.png" alt="Merlin" style="height:44px;width:auto;object-fit:contain;flex-shrink:0"/>
+  <div style="height:44px;display:flex;align-items:center;flex-shrink:0;padding:4px 0">
+    <span style="font-family:'Poppins',sans-serif;font-weight:700;font-size:28px;color:#3B82F6;letter-spacing:-0.5px;line-height:1">merlin<span style="color:#E9721F">.</span></span>
+  </div>
   <div>
     <h1>Agente de Comunicaciones MDT</h1>
     <p>Correos HTML personalizados con IA · <strong>support@mdt.edu.pe</strong></p>
@@ -376,7 +396,71 @@ textarea{resize:vertical;line-height:1.6}
         </div>
       </details>
       <div class="f1"><label>Asunto</label><input id="manual-asunto" placeholder="Ej: Tu avance en {{programa}}: {{avance}}% ¡Sigue así, {{nombre}}!"/></div>
-      <div class="f1"><label>Cuerpo del correo</label><textarea id="manual-cuerpo" rows="7" placeholder="Hola {{nombre}},&#10;&#10;{{#si edad < 18}}Recuerda que necesitas la autorización firmada por tus padres.&#10;{{sino}}Ya puedes inscribirte directamente.&#10;{{/si}}&#10;Tu avance en {{modulo}} es {{avance}}%."></textarea></div>
+      <div class="f1">
+        <label>Cuerpo del correo</label>
+        <div class="rte-wrap">
+          <div class="rte-toolbar" onmousedown="event.target.tagName!=='INPUT'&&event.preventDefault()">
+            <select class="rte-sel" title="Tipo de fuente" onmousedown="rteSaveRange()" onchange="rteExec('fontName',this.value);this.value=''">
+              <option value="">Fuente</option>
+              <option value="Arial">Arial</option>
+              <option value="Georgia">Georgia</option>
+              <option value="Helvetica">Helvetica</option>
+              <option value="Poppins">Poppins</option>
+              <option value="Times New Roman">Times New</option>
+              <option value="Courier New">Courier</option>
+              <option value="Verdana">Verdana</option>
+              <option value="Trebuchet MS">Trebuchet</option>
+            </select>
+            <select class="rte-sel" title="Tamaño de fuente" onmousedown="rteSaveRange()" onchange="rteExec('fontSize',this.value);this.value=''">
+              <option value="">Tam.</option>
+              <option value="1">10px</option>
+              <option value="2">12px</option>
+              <option value="3">14px</option>
+              <option value="4">16px</option>
+              <option value="5">18px</option>
+              <option value="6">24px</option>
+              <option value="7">32px</option>
+            </select>
+            <div class="rte-sep"></div>
+            <button class="rte-btn" title="Negrita (Ctrl+B)" onclick="rteExec('bold')"><b>B</b></button>
+            <button class="rte-btn" title="Cursiva (Ctrl+I)" onclick="rteExec('italic')" style="font-style:italic"><i>I</i></button>
+            <button class="rte-btn" title="Subrayado (Ctrl+U)" onclick="rteExec('underline')" style="text-decoration:underline">U</button>
+            <button class="rte-btn" title="Tachado" onclick="rteExec('strikeThrough')" style="text-decoration:line-through;font-size:13px">S</button>
+            <div class="rte-sep"></div>
+            <label class="rte-clr-btn" title="Color de texto" onmousedown="rteSaveRange()">
+              <span style="font-weight:700;font-size:13px;line-height:1">A</span>
+              <span id="rte-fbar" class="rte-clr-bar" style="background:#E9721F"></span>
+              <input type="color" id="rte-fcolor" value="#E9721F" onchange="rteColor('foreColor',this.value,'rte-fbar')"/>
+            </label>
+            <label class="rte-clr-btn" title="Color de resaltado" onmousedown="rteSaveRange()">
+              <span style="font-size:13px;line-height:1">ab</span>
+              <span id="rte-bbar" class="rte-clr-bar" style="background:#FFFF00"></span>
+              <input type="color" id="rte-bcolor" value="#FFFF00" onchange="rteColor('hiliteColor',this.value,'rte-bbar')"/>
+            </label>
+            <div class="rte-sep"></div>
+            <button class="rte-btn" title="Alinear izquierda" onclick="rteExec('justifyLeft')" style="font-size:11px">⬅</button>
+            <button class="rte-btn" title="Centrar" onclick="rteExec('justifyCenter')" style="font-size:11px">☰</button>
+            <button class="rte-btn" title="Alinear derecha" onclick="rteExec('justifyRight')" style="font-size:11px">➡</button>
+            <div class="rte-sep"></div>
+            <button class="rte-btn" title="Lista con viñetas" onclick="rteExec('insertUnorderedList')" style="font-size:11px">•—</button>
+            <button class="rte-btn" title="Lista numerada" onclick="rteExec('insertOrderedList')" style="font-size:11px">1—</button>
+            <button class="rte-btn" title="Aumentar sangría" onclick="rteExec('indent')" style="font-size:11px">→|</button>
+            <button class="rte-btn" title="Reducir sangría" onclick="rteExec('outdent')" style="font-size:11px">|←</button>
+            <div class="rte-sep"></div>
+            <button class="rte-btn" title="Insertar enlace" onclick="rteInsertLink()">🔗</button>
+            <button class="rte-btn" title="Insertar imagen" onclick="rteInsertImage()">🖼</button>
+            <button class="rte-btn" title="Insertar tabla" onclick="rteInsertTable()">⊞</button>
+            <div class="rte-sep"></div>
+            <button class="rte-btn" title="Línea horizontal" onclick="rteExec('insertHorizontalRule')" style="font-size:11px">—</button>
+            <button class="rte-btn" title="Limpiar formato" onclick="rteExec('removeFormat')" style="font-size:10px;color:var(--muted)">✕fmt</button>
+          </div>
+          <div id="manual-cuerpo-editor" class="rte-editor" contenteditable="true"
+               oninput="rteSyncToHidden()" onkeyup="rteSaveRange()" onmouseup="rteSaveRange()"
+               onfocus="_lastManualFocus='cuerpo';rteSaveRange()"
+               data-placeholder="Hola {{nombre}},&#10;&#10;Tu avance en {{modulo}} es {{avance}}%."></div>
+        </div>
+        <textarea id="manual-cuerpo" style="display:none"></textarea>
+      </div>
       <div style="margin-top:6px">
         <p style="font-size:11px;color:var(--muted);margin-bottom:5px">Emojis — clic para insertar en el campo activo (asunto o cuerpo):</p>
         <div style="display:flex;flex-wrap:wrap;gap:3px">
@@ -846,10 +930,13 @@ function buildHTML(studentName, bodyText, bannerUrl, programa, extraData){
   // Banner
   const bannerSection = safeBanner
     ? `<tr><td style="border-radius:12px 12px 0 0;overflow:hidden;line-height:0;"><img src="${safeBanner}" alt="${programa}" style="width:100%;max-width:600px;height:auto;display:block;"/></td></tr>`
-    : `<tr><td style="background:#0a1628;padding:32px 36px;border-radius:12px 12px 0 0;border-bottom:4px solid #f5a623;"><img src="https://merlin-global.com/assets/merlin-logo-BbzWVHUY.png" alt="Merlin" style="height:50px"><p style="margin:0;font-size:13px;font-weight:700;color:#f5a623;text-transform:uppercase;letter-spacing:2.5px;">${programa||'MDT'}</p></td></tr>`;
+    : `<tr><td style="background:#0a1628;padding:32px 36px;border-radius:12px 12px 0 0;border-bottom:4px solid #E9721F;"><span style="font-family:Arial,sans-serif;font-weight:700;font-size:30px;color:#3B82F6;letter-spacing:-0.5px;line-height:1">merlin<span style="color:#E9721F">.</span></span><p style="margin:6px 0 0;font-size:13px;font-weight:700;color:#E9721F;text-transform:uppercase;letter-spacing:2.5px;">${programa||'MDT'}</p></td></tr>`;
 
-  // Contenido de texto
-  const lines = bodyText.split('\n').filter(l=>l.trim()).map(l=>`<p style="margin:0 0 14px;color:#333;font-size:15px;line-height:1.75;">${l}</p>`).join('');
+  // Contenido: detectar si es HTML del editor enriquecido o texto plano
+  const isHtmlBody = bodyText.trim().startsWith('<');
+  const lines = isHtmlBody
+    ? `<div style="color:#333;font-size:15px;line-height:1.75;font-family:'Helvetica Neue',Arial,sans-serif;">${bodyText}</div>`
+    : bodyText.split('\n').filter(l=>l.trim()).map(l=>`<p style="margin:0 0 14px;color:#333;font-size:15px;line-height:1.75;">${l}</p>`).join('');
 
   
   // Imagen de contenido del correo
@@ -889,7 +976,7 @@ function buildHTML(studentName, bodyText, bannerUrl, programa, extraData){
 <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.10);">
   ${bannerSection}
   <tr><td style="background:#ffffff;padding:32px 36px 8px;">
-    <p style="margin:0 0 6px;font-size:11px;font-weight:700;color:#f5a623;text-transform:uppercase;letter-spacing:2px;">${programa||'MDT'}</p>
+    <p style="margin:0 0 6px;font-size:11px;font-weight:700;color:#E9721F;text-transform:uppercase;letter-spacing:2px;">${programa||'MDT'}</p>
     ${lines}
   </td></tr>
   ${contentImgHtml}
@@ -1335,10 +1422,24 @@ function toggleAB(){
   document.getElementById('ab-fields').style.display=on?'block':'none';
 }
 function insertVar(v){
-  navigator.clipboard?.writeText(v).catch(()=>{});
-  const el=event.target;const orig=el.style.background;
+  // Flash the chip
+  const el=event.currentTarget;const orig=el.style.background;
   el.style.background='var(--purple)';el.style.color='#fff';
   setTimeout(()=>{el.style.background=orig;el.style.color='';},600);
+  // Insert into focused field
+  if(_lastManualFocus==='asunto'){
+    const f=document.getElementById('manual-asunto');
+    const s=f.selectionStart??f.value.length;const e2=f.selectionEnd??f.value.length;
+    f.value=f.value.slice(0,s)+v+f.value.slice(e2);
+    f.selectionStart=f.selectionEnd=s+v.length;f.focus();
+  } else {
+    const ed=document.getElementById('manual-cuerpo-editor');
+    if(!ed) return;
+    ed.focus();
+    if(_rteLastRange){const sel=window.getSelection();sel.removeAllRanges();sel.addRange(_rteLastRange);}
+    document.execCommand('insertText',false,v);
+    rteSyncToHidden();
+  }
 }
 // ── Plantillas manuales ──
 function _loadPlantillas(){try{return JSON.parse(localStorage.getItem('mdt_plantillas')||'[]');}catch{return[];}}
@@ -1362,13 +1463,15 @@ function cargarPlantilla(id){
   const arr=_loadPlantillas();
   const p=arr.find(x=>x.id===id);
   if(!p) return;
-  if(document.getElementById('manual-asunto').value||document.getElementById('manual-cuerpo').value){
+  const ed=document.getElementById('manual-cuerpo-editor');
+  const curBody=ed?ed.textContent.trim():document.getElementById('manual-cuerpo')?.value.trim()||'';
+  if(document.getElementById('manual-asunto').value||curBody){
     if(!confirm('¿Reemplazar el contenido actual con esta plantilla?')) return;
   }
   document.getElementById('manual-asunto').value=p.asunto||'';
-  document.getElementById('manual-cuerpo').value=p.cuerpo||'';
   document.getElementById('manual-link').value=p.link||'';
   document.getElementById('manual-btn-texto').value=p.btnTexto||'Ver más';
+  rteSetContent(p.cuerpo||'');
 }
 
 function eliminarPlantilla(id){
@@ -1394,20 +1497,98 @@ function renderPlantillas(){
 }
 
 let _lastManualFocus='cuerpo';
-// Rastrear qué campo tuvo el foco por último
+let _rteLastRange=null;
 document.addEventListener('focusin',e=>{
   if(e.target.id==='manual-asunto') _lastManualFocus='asunto';
-  if(e.target.id==='manual-cuerpo') _lastManualFocus='cuerpo';
+  if(e.target.id==='manual-cuerpo-editor') _lastManualFocus='cuerpo';
 });
+function rteSaveRange(){
+  const ed=document.getElementById('manual-cuerpo-editor');
+  if(!ed) return;
+  const sel=window.getSelection();
+  if(sel&&sel.rangeCount>0&&ed.contains(sel.anchorNode)) _rteLastRange=sel.getRangeAt(0).cloneRange();
+}
+function rteSyncToHidden(){
+  const ed=document.getElementById('manual-cuerpo-editor');
+  const h=document.getElementById('manual-cuerpo');
+  if(ed&&h) h.value=ed.innerHTML;
+}
+function rteExec(cmd,val){
+  const ed=document.getElementById('manual-cuerpo-editor');
+  if(!ed) return;
+  ed.focus();
+  if(_rteLastRange){const sel=window.getSelection();sel.removeAllRanges();sel.addRange(_rteLastRange);}
+  document.execCommand(cmd,false,val||null);
+  rteSyncToHidden();_rteLastRange=null;
+}
+function rteColor(cmd,val,barId){
+  document.getElementById(barId).style.background=val;
+  const ed=document.getElementById('manual-cuerpo-editor');
+  if(!ed) return;
+  ed.focus();
+  if(_rteLastRange){const sel=window.getSelection();sel.removeAllRanges();sel.addRange(_rteLastRange);}
+  document.execCommand(cmd,false,val);
+  rteSyncToHidden();
+}
+function rteInsertLink(){
+  const url=prompt('URL del enlace:','https://');
+  if(!url) return;
+  const txt=prompt('Texto del enlace (vacío = usar URL):')||url;
+  const ed=document.getElementById('manual-cuerpo-editor');
+  ed.focus();
+  if(_rteLastRange){const sel=window.getSelection();sel.removeAllRanges();sel.addRange(_rteLastRange);}
+  document.execCommand('insertHTML',false,`<a href="${url}" style="color:#3B82F6">${txt}</a>`);
+  rteSyncToHidden();
+}
+function rteInsertImage(){
+  const url=prompt('URL de la imagen:','https://');
+  if(!url) return;
+  const ed=document.getElementById('manual-cuerpo-editor');
+  ed.focus();
+  if(_rteLastRange){const sel=window.getSelection();sel.removeAllRanges();sel.addRange(_rteLastRange);}
+  document.execCommand('insertHTML',false,`<img src="${url}" style="max-width:100%;border-radius:6px" alt="imagen"/>`);
+  rteSyncToHidden();
+}
+function rteInsertTable(){
+  const rows=parseInt(prompt('Filas:','3'))||3;
+  const cols=parseInt(prompt('Columnas:','3'))||3;
+  let html='<table style="width:100%;border-collapse:collapse;margin:8px 0">';
+  for(let r=0;r<rows;r++){
+    html+='<tr>';
+    for(let c=0;c<cols;c++) html+=`<td style="border:1px solid #ccc;padding:6px 10px;min-width:60px">${r===0?`<strong>Col ${c+1}</strong>`:'&nbsp;'}</td>`;
+    html+='</tr>';
+  }
+  html+='</table>';
+  const ed=document.getElementById('manual-cuerpo-editor');
+  ed.focus();
+  if(_rteLastRange){const sel=window.getSelection();sel.removeAllRanges();sel.addRange(_rteLastRange);}
+  document.execCommand('insertHTML',false,html);
+  rteSyncToHidden();
+}
+function rteSetContent(html){
+  const ed=document.getElementById('manual-cuerpo-editor');
+  if(!ed) return;
+  if(html.trim().startsWith('<')){
+    ed.innerHTML=html;
+  } else {
+    ed.innerHTML=html.split('\n').map(l=>l.trim()?`<p>${l}</p>`:'<p><br></p>').join('');
+  }
+  rteSyncToHidden();
+}
 function insertEmoji(emoji){
-  const id=_lastManualFocus==='asunto'?'manual-asunto':'manual-cuerpo';
-  const el=document.getElementById(id);
-  if(!el) return;
-  const s=el.selectionStart??el.value.length;
-  const e2=el.selectionEnd??el.value.length;
-  el.value=el.value.slice(0,s)+emoji+el.value.slice(e2);
-  el.selectionStart=el.selectionEnd=s+emoji.length;
-  el.focus();
+  if(_lastManualFocus==='asunto'){
+    const f=document.getElementById('manual-asunto');
+    const s=f.selectionStart??f.value.length;const e2=f.selectionEnd??f.value.length;
+    f.value=f.value.slice(0,s)+emoji+f.value.slice(e2);
+    f.selectionStart=f.selectionEnd=s+emoji.length;f.focus();
+  } else {
+    const ed=document.getElementById('manual-cuerpo-editor');
+    if(!ed) return;
+    ed.focus();
+    if(_rteLastRange){const sel=window.getSelection();sel.removeAllRanges();sel.addRange(_rteLastRange);}
+    document.execCommand('insertText',false,emoji);
+    rteSyncToHidden();
+  }
 }
 
 // ── Formato de fecha para mostrar: siempre DD/MM/YYYY ──
