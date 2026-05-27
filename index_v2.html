@@ -1415,7 +1415,7 @@ function togglePreviewEdit(){
 }
 async function preview(){
   const f=getF();const cfg=TIPOS[currentType];
-  const st=students.find(s=>s.e)||{n:'Ana Ramirez',e:'a_ramirezdi@yahoo.es',p:programs[0]||'Merlin',extra:'',modulo:'',avance:'',estado:'',equipo:'',genero:'',edad:'',pendientes:'',ultimo_acceso:'',fecha_fin:'',fecha_inicio:''};
+  const st=students.find(s=>s.e)||{n:'Ana Ramirez',e:'a_ramirezdi@yahoo.es',p:'',extra:'',modulo:'',avance:'',estado:'',equipo:'',genero:'',edad:'',pendientes:'',ultimo_acceso:'',fecha_fin:'',fecha_inicio:''};
   const _progSelPrev=document.getElementById('f-prog-sel');
   const prog=_progSelPrev ? _progSelPrev.value : (st.p||f.prog||programs[0]||'');
   const bannerUrl=getActiveBannerUrlFromSel(prog,currentType);
@@ -2831,9 +2831,9 @@ load();
 selType('masterclass');
 renderFormVarChips();
 renderPlantillas();
-addSt('Ana Ramirez','a_ramirezdi@yahoo.es',programs[0]||'Merlin');
-addSt('Mónica Ferrari','mferrari@mdt.pe',programs[0]||'Merlin');
-addSt('Samantha Alcántara','samantha.alcantara.mdt@gmail.com',programs[0]||'Merlin');
+addSt('Ana Ramirez','a_ramirezdi@yahoo.es','');
+addSt('Mónica Ferrari','mferrari@mdt.pe','');
+addSt('Samantha Alcántara','samantha.alcantara.mdt@gmail.com','');
 cargarHistorial();
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
