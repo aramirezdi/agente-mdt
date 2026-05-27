@@ -426,6 +426,11 @@ textarea{resize:vertical;line-height:1.6}
       </div>
       <p style="font-size:11px;color:var(--hint);margin-top:6px">Envía a los primeros N estudiantes de la lista para verificar antes de enviar a todos.</p>
     </div>
+    <!-- Nombre de campaña -->
+    <div style="margin-bottom:10px">
+      <label style="font-size:12px;font-weight:600;color:var(--text);display:block;margin-bottom:4px">Nombre de campaña <span style="font-weight:400;color:var(--muted)">(para el dashboard)</span></label>
+      <input type="text" id="campaign-name-input" placeholder="Ej: HackaCYBER SED Bogotá — Mayo 2026" style="width:100%;padding:7px 10px;font-size:13px;box-sizing:border-box"/>
+    </div>
     <!-- Botones de acción -->
     <div class="brow">
       <button class="btn btn-p" id="send-btn" onclick="enviar()">Enviar a todos</button>
@@ -1603,7 +1608,8 @@ async function enviar(){
   const useZepto=selectedService==='zeptomail'||(selectedService==='auto'&&hasZepto&&valid.length>20);
   const campaignId=crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2);
   const f0=getF();
-  const campaignName=`${f0.nom||students[0]?.p||programs[0]||'General'} — ${TIPOS[currentType]?.label||currentType} — ${new Date().toLocaleDateString('es-PE')}`;
+  const _campInput=(document.getElementById('campaign-name-input')?.value||'').trim();
+  const campaignName=_campInput||`${f0.nom||students[0]?.p||programs[0]||'General'} — ${TIPOS[currentType]?.label||currentType} — ${new Date().toLocaleDateString('es-PE')}`;
   const btn=document.getElementById('send-btn');btn.disabled=true;btn.textContent='Enviando...';
   document.getElementById('send-log').innerHTML='';
   const via=useZepto?'ZeptoMail':'Zoho Mail';
