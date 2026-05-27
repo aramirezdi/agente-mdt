@@ -399,7 +399,7 @@ textarea{resize:vertical;line-height:1.6}
       <div class="f1">
         <label>Cuerpo del correo</label>
         <div class="rte-wrap">
-          <div class="rte-toolbar" onmousedown="event.target.tagName!=='INPUT'&&event.preventDefault()">
+          <div class="rte-toolbar">
             <select class="rte-sel" title="Tipo de fuente" onmousedown="rteSaveRange()" onchange="rteExec('fontName',this.value);this.value=''">
               <option value="">Fuente</option>
               <option value="Arial">Arial</option>
@@ -422,10 +422,10 @@ textarea{resize:vertical;line-height:1.6}
               <option value="7">32px</option>
             </select>
             <div class="rte-sep"></div>
-            <button class="rte-btn" title="Negrita (Ctrl+B)" onclick="rteExec('bold')"><b>B</b></button>
-            <button class="rte-btn" title="Cursiva (Ctrl+I)" onclick="rteExec('italic')" style="font-style:italic"><i>I</i></button>
-            <button class="rte-btn" title="Subrayado (Ctrl+U)" onclick="rteExec('underline')" style="text-decoration:underline">U</button>
-            <button class="rte-btn" title="Tachado" onclick="rteExec('strikeThrough')" style="text-decoration:line-through;font-size:13px">S</button>
+            <button class="rte-btn" title="Negrita (Ctrl+B)" onmousedown="event.preventDefault()" onclick="rteExec('bold')"><b>B</b></button>
+            <button class="rte-btn" title="Cursiva (Ctrl+I)" onmousedown="event.preventDefault()" onclick="rteExec('italic')" style="font-style:italic"><i>I</i></button>
+            <button class="rte-btn" title="Subrayado (Ctrl+U)" onmousedown="event.preventDefault()" onclick="rteExec('underline')" style="text-decoration:underline">U</button>
+            <button class="rte-btn" title="Tachado" onmousedown="event.preventDefault()" onclick="rteExec('strikeThrough')" style="text-decoration:line-through;font-size:13px">S</button>
             <div class="rte-sep"></div>
             <label class="rte-clr-btn" title="Color de texto" onmousedown="rteSaveRange()">
               <span style="font-weight:700;font-size:13px;line-height:1">A</span>
@@ -438,21 +438,21 @@ textarea{resize:vertical;line-height:1.6}
               <input type="color" id="rte-bcolor" value="#FFFF00" onchange="rteColor('hiliteColor',this.value,'rte-bbar')"/>
             </label>
             <div class="rte-sep"></div>
-            <button class="rte-btn" title="Alinear izquierda" onclick="rteExec('justifyLeft')" style="font-size:11px">⬅</button>
-            <button class="rte-btn" title="Centrar" onclick="rteExec('justifyCenter')" style="font-size:11px">☰</button>
-            <button class="rte-btn" title="Alinear derecha" onclick="rteExec('justifyRight')" style="font-size:11px">➡</button>
+            <button class="rte-btn" title="Alinear izquierda" onmousedown="event.preventDefault()" onclick="rteExec('justifyLeft')" style="font-size:11px">⬅</button>
+            <button class="rte-btn" title="Centrar" onmousedown="event.preventDefault()" onclick="rteExec('justifyCenter')" style="font-size:11px">☰</button>
+            <button class="rte-btn" title="Alinear derecha" onmousedown="event.preventDefault()" onclick="rteExec('justifyRight')" style="font-size:11px">➡</button>
             <div class="rte-sep"></div>
-            <button class="rte-btn" title="Lista con viñetas" onclick="rteExec('insertUnorderedList')" style="font-size:11px">•—</button>
-            <button class="rte-btn" title="Lista numerada" onclick="rteExec('insertOrderedList')" style="font-size:11px">1—</button>
-            <button class="rte-btn" title="Aumentar sangría" onclick="rteExec('indent')" style="font-size:11px">→|</button>
-            <button class="rte-btn" title="Reducir sangría" onclick="rteExec('outdent')" style="font-size:11px">|←</button>
+            <button class="rte-btn" title="Lista con viñetas" onmousedown="event.preventDefault()" onclick="rteExec('insertUnorderedList')" style="font-size:11px">•—</button>
+            <button class="rte-btn" title="Lista numerada" onmousedown="event.preventDefault()" onclick="rteExec('insertOrderedList')" style="font-size:11px">1—</button>
+            <button class="rte-btn" title="Aumentar sangría" onmousedown="event.preventDefault()" onclick="rteExec('indent')" style="font-size:11px">→|</button>
+            <button class="rte-btn" title="Reducir sangría" onmousedown="event.preventDefault()" onclick="rteExec('outdent')" style="font-size:11px">|←</button>
             <div class="rte-sep"></div>
-            <button class="rte-btn" title="Insertar enlace" onclick="rteInsertLink()">🔗</button>
-            <button class="rte-btn" title="Insertar imagen" onclick="rteInsertImage()">🖼</button>
-            <button class="rte-btn" title="Insertar tabla" onclick="rteInsertTable()">⊞</button>
+            <button class="rte-btn" title="Insertar enlace" onmousedown="event.preventDefault()" onclick="rteInsertLink()">🔗</button>
+            <button class="rte-btn" title="Insertar imagen" onmousedown="event.preventDefault()" onclick="rteInsertImage()">🖼</button>
+            <button class="rte-btn" title="Insertar tabla" onmousedown="event.preventDefault()" onclick="rteInsertTable()">⊞</button>
             <div class="rte-sep"></div>
-            <button class="rte-btn" title="Línea horizontal" onclick="rteExec('insertHorizontalRule')" style="font-size:11px">—</button>
-            <button class="rte-btn" title="Limpiar formato" onclick="rteExec('removeFormat')" style="font-size:10px;color:var(--muted)">✕fmt</button>
+            <button class="rte-btn" title="Línea horizontal" onmousedown="event.preventDefault()" onclick="rteExec('insertHorizontalRule')" style="font-size:11px">—</button>
+            <button class="rte-btn" title="Limpiar formato" onmousedown="event.preventDefault()" onclick="rteExec('removeFormat')" style="font-size:10px;color:var(--muted)">✕fmt</button>
           </div>
           <div id="manual-cuerpo-editor" class="rte-editor" contenteditable="true"
                oninput="rteSyncToHidden()" onkeyup="rteSaveRange()" onmouseup="rteSaveRange()"
