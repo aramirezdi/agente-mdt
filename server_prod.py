@@ -380,6 +380,32 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(gif)
             return
+        # ── Campañas ──
+        if path == "/api/campaigns":
+            token = self.headers.get("X-Session-Token","")
+            if not get_session(token):
+                self.send_json({"error":"Sesion invalida"},401); return
+            entries = []
+            if os.path.exists(HISTORY_FILE):
+                try:
+                    with open(HISTORY_FILE,"r") as f:
+                        entries = json.load(f)
+                except: pass
+            campaigns = {}
+            for e in entries:
+                cid = e.get("campaign_id","")
+                if not cid:
+                    continue
+                if cid not in campaigns:
+                    campaigns[cid] = {"id":cid,"name":e.get("campaign_name","Sin nombre"),"ts":e.get("ts",""),"sent":0,"errors":0,"opened":0,"total":0}
+                campaigns[cid]["total"] += 1
+                if e.get("ok"):   campaigns[cid]["sent"]   += 1
+                else:             campaigns[cid]["errors"] += 1
+                if e.get("opened"): campaigns[cid]["opened"] += 1
+                if e.get("ts","") < campaigns[cid]["ts"]: campaigns[cid]["ts"] = e.get("ts","")
+            result = sorted(campaigns.values(), key=lambda x: x["ts"], reverse=True)
+            self.send_json({"campaigns": result})
+            return
         # ── Stats / Dashboard ──
         if path == "/api/stats":
             token = self.headers.get("X-Session-Token","")
@@ -391,6 +417,10 @@ class Handler(BaseHTTPRequestHandler):
                     with open(HISTORY_FILE,"r") as f:
                         entries = json.load(f)
                 except: pass
+            params = urllib.parse.parse_qs(self.path.split("?",1)[1] if "?" in self.path else "")
+            campaign_id = params.get("campaign_id",[""])[0]
+            if campaign_id:
+                entries = [e for e in entries if e.get("campaign_id") == campaign_id]
             total  = len(entries)
             sent   = sum(1 for e in entries if e.get("ok"))
             errors = total - sent
@@ -467,6 +497,7 @@ class Handler(BaseHTTPRequestHandler):
             "/api/banner-delete":   self._banner_delete,
             "/api/history-save":    self._history_save,
             "/api/history-load":    self._history_load,
+            "/api/campaign-export": self._campaign_export,
             "/api/schedule-save":   self._schedule_save,
             "/api/schedule-list":   self._schedule_list,
             "/api/schedule-delete": self._schedule_delete,
@@ -766,6 +797,19 @@ class Handler(BaseHTTPRequestHandler):
         except Exception as e:
             self.send_json({"entries":[]})
 
+    def _campaign_export(self, p):
+        campaign_id = p.get("campaign_id","")
+        if not campaign_id:
+            self.send_json({"error":"Falta campaign_id"}); return
+        entries = []
+        if os.path.exists(HISTORY_FILE):
+            try:
+                with open(HISTORY_FILE,"r") as f:
+                    entries = json.load(f)
+            except: pass
+        filtered = [e for e in entries if e.get("campaign_id") == campaign_id]
+        self.send_json({"entries": filtered})
+
     # ── Envíos programados ──
     def _schedule_save(self, p):
         try:
@@ -899,6 +943,8 @@ def execute_scheduled_task(task):
     ok_count  = 0
     err_count = 0
     history   = []
+    campaign_id   = task.get("campaign_id", secrets.token_urlsafe(8))
+    campaign_name = task.get("campaign_name", f"{task.get('tipo','')} — {datetime.now().strftime('%d/%m/%Y')}")
     server_url = os.environ.get("RAILWAY_PUBLIC_DOMAIN","")
     if server_url: server_url = f"https://{server_url}"
     else: server_url = creds.get("server_url","")
@@ -957,10 +1003,10 @@ def execute_scheduled_task(task):
                 _req_static(f"https://mail.zoho.com/api/accounts/{acc_id}/messages",payload,
                     {"Content-Type":"application/json","Authorization":f"Zoho-oauthtoken {zoho_token}"})
             ok_count += 1
-            history.append({"ts":datetime.now().isoformat(),"n":st.get("n",""),"e":st.get("e",""),"prog":prog_val,"ok":True,"asunto":asunto,"tipo":task.get("tipo",""),"via":"zepto" if use_zepto else "zoho","track_id":track_id,"opened":False,"ab_group":ab_group})
+            history.append({"ts":datetime.now().isoformat(),"n":st.get("n",""),"e":st.get("e",""),"prog":prog_val,"ok":True,"asunto":asunto,"tipo":task.get("tipo",""),"via":"zepto" if use_zepto else "zoho","track_id":track_id,"opened":False,"ab_group":ab_group,"campaign_id":campaign_id,"campaign_name":campaign_name})
         except Exception as e:
             err_count += 1
-            history.append({"ts":datetime.now().isoformat(),"n":st.get("n",""),"e":st.get("e",""),"prog":st.get("p",""),"ok":False,"det":str(e),"tipo":task.get("tipo",""),"via":service,"track_id":"","opened":False,"ab_group":ab_group})
+            history.append({"ts":datetime.now().isoformat(),"n":st.get("n",""),"e":st.get("e",""),"prog":st.get("p",""),"ok":False,"det":str(e),"tipo":task.get("tipo",""),"via":service,"track_id":"","opened":False,"ab_group":ab_group,"campaign_id":campaign_id,"campaign_name":campaign_name})
     # Guardar historial
     if history:
         existing = []

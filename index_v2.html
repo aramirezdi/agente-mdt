@@ -645,6 +645,13 @@ textarea{resize:vertical;line-height:1.6}
 
 <!-- TAB Dashboard -->
 <div id="tab-dashboard" class="sec">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+    <select id="dash-campaign-sel" onchange="onCampaignChange()" style="flex:1;min-width:220px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--fg);padding:7px 10px;font-size:13px">
+      <option value="">📊 Todas las campañas</option>
+    </select>
+    <button id="dash-export-btn" class="btn btn-g btn-sm" onclick="exportCampaignCSV()" style="display:none">⬇ Exportar CSV</button>
+    <button class="btn btn-g btn-sm" onclick="loadDashboard()">↻ Actualizar</button>
+  </div>
   <div class="dash-grid" id="dash-cards">
     <div class="dash-card"><div class="dc-label">Total enviados</div><div class="dc-val" id="dc-sent">—</div><div class="dc-sub" id="dc-sent-sub"></div></div>
     <div class="dash-card accent-green"><div class="dc-label">Tasa de éxito</div><div class="dc-val" id="dc-ok">—</div><div class="dc-sub" id="dc-ok-sub"></div></div>
@@ -671,9 +678,6 @@ textarea{resize:vertical;line-height:1.6}
       <div class="card-ttl">Prueba A/B</div>
       <div id="dash-ab"></div>
     </div>
-  </div>
-  <div style="text-align:right;margin-bottom:8px">
-    <button class="btn btn-g btn-sm" onclick="loadDashboard()">↻ Actualizar</button>
   </div>
 </div>
 
@@ -1597,6 +1601,9 @@ async function enviar(){
   if(!valid.length){setSt('send-st','Agrega al menos un estudiante con nombre y correo.','warn');return;}
   const hasZepto=credsStatus.zeptomail||localStorage.getItem('mdt_zepto')||'';
   const useZepto=selectedService==='zeptomail'||(selectedService==='auto'&&hasZepto&&valid.length>20);
+  const campaignId=crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2);
+  const f0=getF();
+  const campaignName=`${f0.nom||students[0]?.p||programs[0]||'General'} — ${TIPOS[currentType]?.label||currentType} — ${new Date().toLocaleDateString('es-PE')}`;
   const btn=document.getElementById('send-btn');btn.disabled=true;btn.textContent='Enviando...';
   document.getElementById('send-log').innerHTML='';
   const via=useZepto?'ZeptoMail':'Zoho Mail';
@@ -1647,8 +1654,8 @@ async function enviar(){
       const html=buildHTML(st.n,cuerpo,bannerUrl,prog,extraBuild);
       if(useZepto){await sendZeptoMail(st.e,st.n,asunto,html);}
       else{await sendZoho(st.e,asunto,html);}
-      ok++;addLog(st.n,st.e,true,asunto,useZepto?'zepto':'zoho',asunto,cuerpo,{trackId,abGroup:abGroup_||'',prog:st.p||prog});
-    }catch(e){err++;addLog(st.n,st.e,false,e.message?.slice(0,80)||'Error',useZepto?'zepto':'zoho','','',{abGroup:'',prog:st.p||''});}
+      ok++;addLog(st.n,st.e,true,asunto,useZepto?'zepto':'zoho',asunto,cuerpo,{trackId,abGroup:abGroup_||'',prog:st.p||prog,campaignId,campaignName});
+    }catch(e){err++;addLog(st.n,st.e,false,e.message?.slice(0,80)||'Error',useZepto?'zepto':'zoho','','',{abGroup:'',prog:st.p||'',campaignId,campaignName});}
   }
   btn.disabled=false;btn.textContent='Enviar a todos';
   if(err===0)setSt('send-st',`${ok} correo(s) enviados desde support@mdt.edu.pe via ${via}`,'ok');
@@ -1758,11 +1765,50 @@ function importarHojas(){
 
 
 // ── Dashboard ──
+let _dashCampaigns=[];
+let _selectedCampaignId='';
+
+function onCampaignChange(){
+  _selectedCampaignId=document.getElementById('dash-campaign-sel')?.value||'';
+  const exportBtn=document.getElementById('dash-export-btn');
+  if(exportBtn) exportBtn.style.display=_selectedCampaignId?'inline-block':'none';
+  loadDashboard();
+}
+
+async function exportCampaignCSV(){
+  if(!_selectedCampaignId) return;
+  try{
+    const d=await apiPost('/api/campaign-export',{campaign_id:_selectedCampaignId});
+    const rows=d.entries||[];
+    const campaign=_dashCampaigns.find(c=>c.id===_selectedCampaignId);
+    const header='Nombre,Email,Fecha,Enviado,Abierto,Asunto,Servicio\n';
+    const csv=header+rows.map(e=>`"${(e.n||'').replace(/"/g,"'")}","${e.e||''}","${(e.ts||'').slice(0,19)}","${e.ok?'Sí':'No'}","${e.opened?'Sí':'No'}","${(e.asunto||'').replace(/"/g,"'")}","${e.via||''}"`).join('\n');
+    const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;
+    a.download=((campaign?.name||'campaña').replace(/[/\\:*?"<>|]/g,'_').slice(0,50))+'.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  }catch(e){alert('Error al exportar: '+e.message);}
+}
+
 async function loadDashboard(){
   const cards=['dc-sent','dc-ok','dc-err','dc-open'];
   cards.forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='…';});
   try{
-    const d=await fetch('/api/stats',{headers:{'X-Session-Token':sessionStorage.getItem('mdt_session')||''}}).then(r=>r.json());
+    // Cargar lista de campañas
+    const cr=await fetch('/api/campaigns',{headers:{'X-Session-Token':sessionStorage.getItem('mdt_session')||''}}).then(r=>r.json());
+    _dashCampaigns=cr.campaigns||[];
+    const sel=document.getElementById('dash-campaign-sel');
+    if(sel){
+      const cur=_selectedCampaignId;
+      sel.innerHTML='<option value="">📊 Todas las campañas</option>'+
+        _dashCampaigns.map(c=>`<option value="${c.id}">${c.name} · ${c.sent} env · ${c.ts.slice(0,10)}</option>`).join('');
+      if(cur){sel.value=cur;_selectedCampaignId=sel.value;}
+    }
+    const statsUrl='/api/stats'+(_selectedCampaignId?'?campaign_id='+_selectedCampaignId:'');
+    const d=await fetch(statsUrl,{headers:{'X-Session-Token':sessionStorage.getItem('mdt_session')||''}}).then(r=>r.json());
     // Cards
     const pct=(n,t)=>t>0?Math.round(n/t*100)+'%':'0%';
     document.getElementById('dc-sent').textContent=d.sent;
@@ -1989,7 +2035,7 @@ function addLog(n,e,ok,det,via,asunto,cuerpo,extra){
   const badge=via==='zepto'?'<span class="mb mb-sp">ZeptoMail</span>':via==='sp'?'<span class="mb mb-sp">SendPulse</span>':'<span class="mb mb-zoho">Zoho</span>';
   const abBadge=(extra?.abGroup)?` <span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;background:${extra.abGroup==='A'?'var(--green-bg)':'var(--purple-bg)'};color:${extra.abGroup==='A'?'var(--green)':'var(--purple)'};border:1px solid ${extra.abGroup==='A'?'var(--green-border)':'var(--purple-border)'}">Grupo ${extra.abGroup}</span>`:'';
   document.getElementById('send-log').innerHTML+=`<div class="lr ${ok?'ok':'err'}"><span class="lt">${t}</span><span>${ok?'Enviado':'Error'} ${badge}${abBadge} — <strong>${n}</strong> &lt;${e}&gt;${det?' — '+det:''}</span></div>`;
-  const entry={ts,n,e,ok,det,tipo:currentType,via,asunto:asunto||'',cuerpo:cuerpo||'',track_id:extra?.trackId||'',opened:false,ab_group:extra?.abGroup||'',prog:extra?.prog||''};
+  const entry={ts,n,e,ok,det,tipo:currentType,via,asunto:asunto||'',cuerpo:cuerpo||'',track_id:extra?.trackId||'',opened:false,ab_group:extra?.abGroup||'',prog:extra?.prog||'',campaign_id:extra?.campaignId||'',campaign_name:extra?.campaignName||''};
   historialCompleto.push(entry);
   _lsHistSave(historialCompleto);
   apiPost('/api/history-save',{entries:[entry]}).catch(()=>{});
