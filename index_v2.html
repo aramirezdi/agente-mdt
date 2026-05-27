@@ -477,11 +477,45 @@ textarea{resize:vertical;line-height:1.6}
     <!-- Prueba A/B -->
     <label class="ab-toggle"><input type="checkbox" id="ab-active" onchange="toggleAB()"/> <span style="font-size:13px;font-weight:500">Activar Prueba A/B</span> <span style="font-size:11px;color:var(--muted)">— divide estudiantes en 2 grupos con instrucciones distintas</span></label>
     <div id="ab-fields" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:10px">
-      <div class="g2f">
+      <!-- IA mode -->
+      <div id="ab-ia-section" class="g2f">
         <div><label style="color:var(--green)">Instrucción Grupo A (50%)</label><textarea id="ab-inst-a" rows="2" placeholder="Ej: Usa un tono muy motivador y urgente"></textarea></div>
         <div><label style="color:var(--purple)">Instrucción Grupo B (50%)</label><textarea id="ab-inst-b" rows="2" placeholder="Ej: Usa un tono amigable y cercano, sin presión"></textarea></div>
       </div>
-      <p style="font-size:11px;color:var(--muted);margin-top:6px">Claude generará correos distintos para cada grupo. Compara tasas de apertura en el Dashboard.</p>
+      <p id="ab-ia-hint" style="font-size:11px;color:var(--muted);margin-top:6px">Claude generará correos distintos para cada grupo. Compara tasas de apertura en el Dashboard.</p>
+      <!-- Manual mode -->
+      <div id="ab-manual-section" style="display:none">
+        <div style="display:flex;gap:10px;align-items:flex-start">
+          <div style="background:var(--green-bg);border:1px solid var(--green-border);border-radius:6px;padding:10px 12px;font-size:11px;color:var(--green);flex:1;min-width:0">
+            <strong>Grupo A (50%)</strong><br/><span style="color:var(--muted)">Usa el cuerpo del editor principal ↑</span>
+          </div>
+          <div style="flex:2;min-width:0">
+            <label style="color:var(--purple);font-weight:600;font-size:12px;display:block;margin-bottom:6px">Grupo B (50%) — cuerpo alternativo</label>
+            <div class="rte-wrap">
+              <div class="rte-toolbar">
+                <button class="rte-btn" title="Negrita" onmousedown="event.preventDefault()" onclick="rteExecB('bold')"><b>B</b></button>
+                <button class="rte-btn" title="Cursiva" onmousedown="event.preventDefault()" onclick="rteExecB('italic')" style="font-style:italic"><i>I</i></button>
+                <button class="rte-btn" title="Subrayado" onmousedown="event.preventDefault()" onclick="rteExecB('underline')" style="text-decoration:underline">U</button>
+                <div class="rte-sep"></div>
+                <button class="rte-btn" title="Alinear izquierda" onmousedown="event.preventDefault()" onclick="rteExecB('justifyLeft')" style="font-size:11px">⬅</button>
+                <button class="rte-btn" title="Centrar" onmousedown="event.preventDefault()" onclick="rteExecB('justifyCenter')" style="font-size:11px">☰</button>
+                <div class="rte-sep"></div>
+                <button class="rte-btn" title="Lista con viñetas" onmousedown="event.preventDefault()" onclick="rteExecB('insertUnorderedList')" style="font-size:11px">•—</button>
+                <button class="rte-btn" title="Lista numerada" onmousedown="event.preventDefault()" onclick="rteExecB('insertOrderedList')" style="font-size:11px">1—</button>
+                <div class="rte-sep"></div>
+                <button class="rte-btn" title="Insertar enlace" onmousedown="event.preventDefault()" onclick="rteInsertLinkB()">🔗</button>
+                <button class="rte-btn" title="Limpiar formato" onmousedown="event.preventDefault()" onclick="rteExecB('removeFormat')" style="font-size:10px;color:var(--muted)">✕fmt</button>
+              </div>
+              <div id="manual-cuerpo-b-editor" class="rte-editor" contenteditable="true"
+                   oninput="rteSyncB()" onkeyup="rteSaveRangeB()" onmouseup="rteSaveRangeB()"
+                   onfocus="rteSaveRangeB()" style="min-height:120px"
+                   data-placeholder="Cuerpo alternativo para el Grupo B..."></div>
+            </div>
+            <textarea id="manual-cuerpo-b" style="display:none"></textarea>
+          </div>
+        </div>
+        <p style="font-size:11px;color:var(--muted);margin-top:8px">Los estudiantes pares recibirán el Grupo A (editor principal) y los impares el Grupo B. Compara aperturas en el Dashboard.</p>
+      </div>
     </div>
     <!-- Envío de prueba -->
     <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:10px">
@@ -1361,7 +1395,6 @@ async function preview(){
       ps.innerHTML='<span style="color:var(--amber);font-size:12px">Escribe el asunto y el cuerpo primero.</span>';return;
     }
     const asunto=replaceVars(manualAsunto,st,prog,f);
-    const cuerpo=replaceVars(manualCuerpo,st,prog,f);
     const prevLink=document.getElementById('manual-link')?.value.trim()||'';
     const prevBtnTexto=document.getElementById('manual-btn-texto')?.value.trim()||'Ver más';
     const prevExtra={contentImg:getContentImgUrl()};
@@ -1371,10 +1404,25 @@ async function preview(){
     if(prevLink){prevExtra.linkEvento=prevLink;prevExtra.btnTexto=prevBtnTexto;}
     else if(f.link){prevExtra.linkEvento=f.link;prevExtra.btnTexto=prevBtnTexto;}
     pa.className='prev-box prev-subj';pa.textContent=asunto||'(sin asunto)';
-    const previewHtml=buildHTML(st.n,cuerpo,bannerUrl,prog,prevExtra);
-    pb.className='prev-box prev-html';
-    pb.innerHTML=`<iframe srcdoc="${previewHtml.replace(/"/g,'&quot;')}" style="width:100%;border:none;border-radius:7px;min-height:400px;" onload="this.style.height=Math.min(this.contentDocument.body.scrollHeight+40,650)+'px'"></iframe>`;
-    ps.innerHTML=`<span style="color:var(--green);font-size:12px">Vista previa de: <strong>${st.n}</strong></span>`;
+    const abOn=document.getElementById('ab-active')?.checked;
+    if(abOn){
+      const manualCuerpoB=document.getElementById('manual-cuerpo-b')?.value.trim()||manualCuerpo;
+      const htmlA=buildHTML(st.n,replaceVars(manualCuerpo,st,prog,f),bannerUrl,prog,prevExtra);
+      const htmlB=buildHTML(st.n,replaceVars(manualCuerpoB,st,prog,f),bannerUrl,prog,prevExtra);
+      pb.className='prev-box prev-html';
+      pb.style.padding='0';
+      pb.innerHTML=
+        `<div style="padding:8px 12px 4px;font-size:11px;font-weight:600;color:var(--green);background:var(--green-bg);border-bottom:1px solid var(--green-border)">Grupo A</div>`+
+        `<iframe srcdoc="${htmlA.replace(/"/g,'&quot;')}" style="width:100%;border:none;min-height:300px;display:block" onload="this.style.height=Math.min(this.contentDocument.body.scrollHeight+30,500)+'px'"></iframe>`+
+        `<div style="padding:8px 12px 4px;font-size:11px;font-weight:600;color:var(--purple);background:var(--purple-bg);border-top:1px solid var(--purple-border);border-bottom:1px solid var(--purple-border)">Grupo B</div>`+
+        `<iframe srcdoc="${htmlB.replace(/"/g,'&quot;')}" style="width:100%;border:none;min-height:300px;display:block" onload="this.style.height=Math.min(this.contentDocument.body.scrollHeight+30,500)+'px'"></iframe>`;
+      ps.innerHTML=`<span style="color:var(--green);font-size:12px">Vista previa A/B — <strong>${st.n}</strong></span>`;
+    } else {
+      const previewHtml=buildHTML(st.n,replaceVars(manualCuerpo,st,prog,f),bannerUrl,prog,prevExtra);
+      pb.className='prev-box prev-html';pb.style.padding='';
+      pb.innerHTML=`<iframe srcdoc="${previewHtml.replace(/"/g,'&quot;')}" style="width:100%;border:none;border-radius:7px;min-height:400px;" onload="this.style.height=Math.min(this.contentDocument.body.scrollHeight+40,650)+'px'"></iframe>`;
+      ps.innerHTML=`<span style="color:var(--green);font-size:12px">Vista previa de: <strong>${st.n}</strong></span>`;
+    }
     return;
   }
   ps.innerHTML='<span style="display:inline-flex;gap:5px;align-items:center"><span class="spin" style="border-color:var(--purple);border-top-color:transparent"></span> Claude redactando...</span>';
@@ -1420,6 +1468,43 @@ async function enviarPrueba(){
 function toggleAB(){
   const on=document.getElementById('ab-active').checked;
   document.getElementById('ab-fields').style.display=on?'block':'none';
+  updateABSections(modoEnvio);
+}
+function updateABSections(m){
+  const isManual=m==='manual';
+  const iaS=document.getElementById('ab-ia-section');
+  const iaH=document.getElementById('ab-ia-hint');
+  const manS=document.getElementById('ab-manual-section');
+  if(iaS) iaS.style.display=isManual?'none':'grid';
+  if(iaH) iaH.style.display=isManual?'none':'block';
+  if(manS) manS.style.display=isManual?'block':'none';
+}
+let _rteLastRangeB=null;
+function rteSaveRangeB(){
+  const ed=document.getElementById('manual-cuerpo-b-editor');if(!ed)return;
+  const sel=window.getSelection();
+  if(sel&&sel.rangeCount>0&&ed.contains(sel.anchorNode))_rteLastRangeB=sel.getRangeAt(0).cloneRange();
+}
+function rteSyncB(){
+  const ed=document.getElementById('manual-cuerpo-b-editor');
+  const h=document.getElementById('manual-cuerpo-b');
+  if(ed&&h)h.value=ed.innerHTML;
+}
+function rteExecB(cmd,val){
+  const ed=document.getElementById('manual-cuerpo-b-editor');if(!ed)return;
+  ed.focus();
+  if(_rteLastRangeB){const sel=window.getSelection();sel.removeAllRanges();sel.addRange(_rteLastRangeB);}
+  document.execCommand(cmd,false,val||null);
+  rteSyncB();_rteLastRangeB=null;
+}
+function rteInsertLinkB(){
+  const url=prompt('URL del enlace:','https://');if(!url)return;
+  const txt=prompt('Texto del enlace:')||url;
+  const ed=document.getElementById('manual-cuerpo-b-editor');if(!ed)return;
+  ed.focus();
+  if(_rteLastRangeB){const sel=window.getSelection();sel.removeAllRanges();sel.addRange(_rteLastRangeB);}
+  document.execCommand('insertHTML',false,`<a href="${url}" style="color:#3B82F6">${txt}</a>`);
+  rteSyncB();
 }
 function insertVar(v){
   // Flash the chip
@@ -1759,10 +1844,10 @@ function setModo(m){
   document.getElementById('modo-manual-btn').style.cssText=m==='manual'?'flex:1;background:var(--purple);color:#fff;border:none':'flex:1';
   document.getElementById('modo-manual-btn').className=m==='manual'?'btn btn-sm':'btn btn-g btn-sm';
   document.getElementById('manual-editor').style.display=m==='manual'?'block':'none';
-  // Ocultar A/B en modo manual (no aplica)
-  document.getElementById('ab-active').closest('label').style.display=m==='manual'?'none':'flex';
+  // Actualizar secciones A/B según modo
   document.getElementById('ab-fields').style.display='none';
-  if(m==='manual') document.getElementById('ab-active').checked=false;
+  document.getElementById('ab-active').checked=false;
+  updateABSections(m);
   // Actualizar card de vista previa
   const chip=document.getElementById('prev-mode-chip');
   const btn=document.getElementById('prev-btn');
@@ -1805,9 +1890,10 @@ async function enviar(){
     btn.disabled=false;btn.textContent='Enviar a todos';
     setSt('send-st','Completa el asunto y el cuerpo del correo manual.','warn');return;
   }
-  const abActive=!esManual&&document.getElementById('ab-active')?.checked;
+  const abActive=document.getElementById('ab-active')?.checked;
   const abInstA=document.getElementById('ab-inst-a')?.value||'';
   const abInstB=document.getElementById('ab-inst-b')?.value||'';
+  const manualCuerpoB=document.getElementById('manual-cuerpo-b')?.value.trim()||manualCuerpo;
   for(let i=0;i<valid.length;i++){
     const st=valid[i];
     try{
@@ -1816,8 +1902,10 @@ async function enviar(){
       const trackId=crypto.randomUUID ? crypto.randomUUID().replace(/-/g,'') : Math.random().toString(36).slice(2)+Date.now().toString(36);
       let asunto,cuerpo;
       if(esManual){
+        const abGroup=abActive?(i%2===0?'A':'B'):'';
+        var abGroup_=abGroup;
         asunto=replaceVars(manualAsunto,st,prog,f);
-        cuerpo=replaceVars(manualCuerpo,st,prog,f);
+        cuerpo=replaceVars(abActive&&abGroup==='B'?manualCuerpoB:manualCuerpo,st,prog,f);
       } else {
         const abGroup=abActive?(i%2===0?'A':'B'):'';
         const abInst=abGroup==='A'?abInstA:abGroup==='B'?abInstB:'';
