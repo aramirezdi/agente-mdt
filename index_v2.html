@@ -1263,7 +1263,7 @@ async function sendSendPulse(toEmail,toName,subject,htmlBody){
 // ── Preview ──
 async function preview(){
   const f=getF();const cfg=TIPOS[currentType];
-  const st=students.find(s=>s.e)||{n:'María Torres',e:'maria@ejemplo.com',p:programs[0]||'MDT',extra:'',modulo:'',avance:'',estado:'',equipo:'',genero:'',edad:'',pendientes:'',ultimo_acceso:'',fecha_fin:'',fecha_inicio:''};
+  const st=students.find(s=>s.e)||{n:'Ana Ramirez',e:'a_ramirezdi@yahoo.es',p:programs[0]||'Merlin',extra:'',modulo:'',avance:'',estado:'',equipo:'',genero:'',edad:'',pendientes:'',ultimo_acceso:'',fecha_fin:'',fecha_inicio:''};
   const prog=st.p||f.prog||programs[0]||'';
   const bannerUrl=getActiveBannerUrlFromSel(prog,currentType);
   const ps=document.getElementById('prev-st'),pa=document.getElementById('prev-subj'),pb=document.getElementById('prev-html');
@@ -2519,7 +2519,7 @@ load();
 selType('masterclass');
 renderFormVarChips();
 renderPlantillas();
-addSt('María Torres','maria@ejemplo.com',programs[0]);
+addSt('Ana Ramirez','a_ramirezdi@yahoo.es',programs[0]||'Merlin');
 cargarHistorial();
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
