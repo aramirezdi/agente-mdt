@@ -627,6 +627,7 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json({"error":"Faltan campos requeridos (to_email, html)."}); return
         payload = {
             "from": {"address": "support@mail.mdt.edu.pe", "name": "Equipo MDT"},
+            "reply_to": [{"address": "support@mdt.edu.pe", "name": "Equipo MDT"}],
             "to": [{"email_address": {"address": to_email, "name": to_name or to_email}}],
             "subject": subject,
             "htmlbody": html,
@@ -938,6 +939,7 @@ def execute_scheduled_task(task):
                 text_body = cuerpo  # cuerpo ya es texto plano desde Claude
                 zp = {
                     "from": {"address":"support@mail.mdt.edu.pe","name":"Equipo MDT"},
+                    "reply_to": [{"address":"support@mdt.edu.pe","name":"Equipo MDT"}],
                     "to": [{"email_address":{"address":st.get("e",""),"name":st.get("n","")}}],
                     "subject": asunto,
                     "htmlbody": cuerpo,
