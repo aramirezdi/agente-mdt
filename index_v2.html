@@ -490,7 +490,11 @@ textarea{resize:vertical;line-height:1.6}
             <strong>Grupo A (50%)</strong><br/><span style="color:var(--muted)">Usa el cuerpo del editor principal ↑</span>
           </div>
           <div style="flex:2;min-width:0">
-            <label style="color:var(--purple);font-weight:600;font-size:12px;display:block;margin-bottom:6px">Grupo B (50%) — cuerpo alternativo</label>
+            <label style="color:var(--purple);font-weight:600;font-size:12px;display:block;margin-bottom:6px">Grupo B (50%) — versión alternativa</label>
+            <div class="f1" style="margin-bottom:8px">
+              <label style="font-size:11px;color:var(--muted)">Asunto Grupo B <span style="color:var(--hint)">(vacío = mismo que Grupo A)</span></label>
+              <input id="manual-asunto-b" placeholder="Ej: ¡Última oportunidad, {{nombre}}! Tu acceso vence pronto" style="font-size:12px;padding:7px 10px"/>
+            </div>
             <div class="rte-wrap">
               <div class="rte-toolbar">
                 <button class="rte-btn" title="Negrita" onmousedown="event.preventDefault()" onclick="rteExecB('bold')"><b>B</b></button>
@@ -1407,14 +1411,19 @@ async function preview(){
     const abOn=document.getElementById('ab-active')?.checked;
     if(abOn){
       const manualCuerpoB=document.getElementById('manual-cuerpo-b')?.value.trim()||manualCuerpo;
+      const manualAsuntoB=(document.getElementById('manual-asunto-b')?.value.trim()||manualAsunto);
+      const asuntoA=replaceVars(manualAsunto,st,prog,f);
+      const asuntoB=replaceVars(manualAsuntoB,st,prog,f);
       const htmlA=buildHTML(st.n,replaceVars(manualCuerpo,st,prog,f),bannerUrl,prog,prevExtra);
       const htmlB=buildHTML(st.n,replaceVars(manualCuerpoB,st,prog,f),bannerUrl,prog,prevExtra);
+      pa.className='prev-box prev-subj';
+      pa.innerHTML=`<span style="color:var(--green);font-weight:600">A:</span> ${asuntoA||'(sin asunto)'}<br/><span style="color:var(--purple);font-weight:600">B:</span> ${asuntoB||'(sin asunto)'}`;
       pb.className='prev-box prev-html';
       pb.style.padding='0';
       pb.innerHTML=
-        `<div style="padding:8px 12px 4px;font-size:11px;font-weight:600;color:var(--green);background:var(--green-bg);border-bottom:1px solid var(--green-border)">Grupo A</div>`+
+        `<div style="padding:8px 12px 4px;font-size:11px;font-weight:600;color:var(--green);background:var(--green-bg);border-bottom:1px solid var(--green-border)">Grupo A — ${esc(asuntoA)}</div>`+
         `<iframe srcdoc="${htmlA.replace(/"/g,'&quot;')}" style="width:100%;border:none;min-height:300px;display:block" onload="this.style.height=Math.min(this.contentDocument.body.scrollHeight+30,500)+'px'"></iframe>`+
-        `<div style="padding:8px 12px 4px;font-size:11px;font-weight:600;color:var(--purple);background:var(--purple-bg);border-top:1px solid var(--purple-border);border-bottom:1px solid var(--purple-border)">Grupo B</div>`+
+        `<div style="padding:8px 12px 4px;font-size:11px;font-weight:600;color:var(--purple);background:var(--purple-bg);border-top:1px solid var(--purple-border);border-bottom:1px solid var(--purple-border)">Grupo B — ${esc(asuntoB)}</div>`+
         `<iframe srcdoc="${htmlB.replace(/"/g,'&quot;')}" style="width:100%;border:none;min-height:300px;display:block" onload="this.style.height=Math.min(this.contentDocument.body.scrollHeight+30,500)+'px'"></iframe>`;
       ps.innerHTML=`<span style="color:var(--green);font-size:12px">Vista previa A/B — <strong>${st.n}</strong></span>`;
     } else {
@@ -1894,6 +1903,7 @@ async function enviar(){
   const abInstA=document.getElementById('ab-inst-a')?.value||'';
   const abInstB=document.getElementById('ab-inst-b')?.value||'';
   const manualCuerpoB=document.getElementById('manual-cuerpo-b')?.value.trim()||manualCuerpo;
+  const manualAsuntoB=(document.getElementById('manual-asunto-b')?.value.trim()||manualAsunto);
   for(let i=0;i<valid.length;i++){
     const st=valid[i];
     try{
@@ -1904,8 +1914,9 @@ async function enviar(){
       if(esManual){
         const abGroup=abActive?(i%2===0?'A':'B'):'';
         var abGroup_=abGroup;
-        asunto=replaceVars(manualAsunto,st,prog,f);
-        cuerpo=replaceVars(abActive&&abGroup==='B'?manualCuerpoB:manualCuerpo,st,prog,f);
+        const esGrupoB=abActive&&abGroup==='B';
+        asunto=replaceVars(esGrupoB?manualAsuntoB:manualAsunto,st,prog,f);
+        cuerpo=replaceVars(esGrupoB?manualCuerpoB:manualCuerpo,st,prog,f);
       } else {
         const abGroup=abActive?(i%2===0?'A':'B'):'';
         const abInst=abGroup==='A'?abInstA:abGroup==='B'?abInstB:'';
