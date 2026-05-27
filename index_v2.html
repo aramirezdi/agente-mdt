@@ -1378,7 +1378,7 @@ async function sendSendPulse(toEmail,toName,subject,htmlBody){
     html: htmlBody,
     text: textBody,
     subject: subject,
-    from: {name:'Equipo MDT', email:'support@mdt.edu.pe'},
+    from: {name:'Equipo Merlin Global', email:'support@mdt.edu.pe'},
     to: [{name:toName, email:toEmail}]
   };
   const d=await apiPost('/api/sp-send',{message:msg});
@@ -1579,7 +1579,13 @@ function guardarPlantilla(){
   const nombre=prompt('Nombre para esta plantilla:',asunto.slice(0,50)||'Nueva plantilla');
   if(!nombre) return;
   const arr=_loadPlantillas();
-  arr.unshift({id:Date.now(),nombre,asunto,cuerpo,link,btnTexto,tipo:currentType});
+  const entry={id:Date.now(),nombre,asunto,cuerpo,link,btnTexto,tipo:currentType};
+  if(abActive&&modoEnvio==='manual'){
+    rteSyncB();
+    entry.asuntoB=document.getElementById('manual-asunto-b')?.value.trim()||'';
+    entry.cuerpoB=document.getElementById('manual-cuerpo-b')?.value.trim()||'';
+  }
+  arr.unshift(entry);
   _savePlantillas(arr);
   renderPlantillas();
 }
@@ -1597,6 +1603,16 @@ function cargarPlantilla(id){
   document.getElementById('manual-link').value=p.link||'';
   document.getElementById('manual-btn-texto').value=p.btnTexto||'Ver más';
   rteSetContent(p.cuerpo||'');
+  if(p.asuntoB!==undefined){
+    const elAB=document.getElementById('manual-asunto-b');
+    if(elAB) elAB.value=p.asuntoB;
+  }
+  if(p.cuerpoB!==undefined){
+    const edB=document.getElementById('manual-cuerpo-b-editor');
+    const hB=document.getElementById('manual-cuerpo-b');
+    if(edB) edB.innerHTML=p.cuerpoB;
+    if(hB) hB.value=p.cuerpoB;
+  }
 }
 
 function eliminarPlantilla(id){
@@ -1613,7 +1629,9 @@ function renderPlantillas(){
   el.innerHTML=arr.map(p=>`
     <div style="display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:7px 10px">
       <div style="flex:1;min-width:0">
-        <div style="font-size:12px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(p.nombre)}</div>
+        <div style="font-size:12px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+          ${esc(p.nombre)}${p.asuntoB!==undefined?'<span style="margin-left:5px;font-size:9px;font-weight:600;background:var(--purple-bg);color:var(--purple);border:1px solid var(--purple-border);border-radius:3px;padding:1px 4px">A/B</span>':''}
+        </div>
         <div style="font-size:10px;color:var(--hint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(p.asunto||p.cuerpo.slice(0,60))}</div>
       </div>
       <button class="btn btn-sm btn-g" onclick="cargarPlantilla(${p.id})" style="font-size:11px;white-space:nowrap">Usar</button>

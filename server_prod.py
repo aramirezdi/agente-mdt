@@ -659,8 +659,8 @@ class Handler(BaseHTTPRequestHandler):
         if not to_email or not html:
             self.send_json({"error":"Faltan campos requeridos (to_email, html)."}); return
         payload = {
-            "from": {"address": "support@mail.mdt.edu.pe", "name": "Equipo MDT"},
-            "reply_to": [{"address": "support@mdt.edu.pe", "name": "Equipo MDT"}],
+            "from": {"address": "support@mail.mdt.edu.pe", "name": "Equipo Merlin Global"},
+            "reply_to": [{"address": "support@mdt.edu.pe", "name": "Equipo Merlin Global"}],
             "to": [{"email_address": {"address": to_email, "name": to_name or to_email}}],
             "subject": subject,
             "htmlbody": html,
