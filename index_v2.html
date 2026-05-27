@@ -553,6 +553,7 @@ textarea{resize:vertical;line-height:1.6}
     </div>
     <div class="brow" style="margin-bottom:12px">
       <button id="prev-btn" class="btn btn-g btn-sm" onclick="preview()">Generar vista previa</button>
+      <button id="prev-edit-btn" class="btn btn-g btn-sm" onclick="togglePreviewEdit()" style="display:none">✏️ Editar</button>
       <span id="prev-st" style="font-size:12px;color:var(--muted)"></span>
     </div>
     <div class="prev-lbl">Asunto</div>
@@ -968,7 +969,7 @@ function buildHTML(studentName, bodyText, bannerUrl, programa, extraData){
   // Banner
   const bannerSection = safeBanner
     ? `<tr><td style="border-radius:12px 12px 0 0;overflow:hidden;line-height:0;"><img src="${safeBanner}" alt="${programa}" style="width:100%;max-width:600px;height:auto;display:block;"/></td></tr>`
-    : `<tr><td style="background:#0a1628;padding:32px 36px;border-radius:12px 12px 0 0;border-bottom:4px solid #E9721F;"><span style="font-family:Arial,sans-serif;font-weight:700;font-size:30px;color:#3B82F6;letter-spacing:-0.5px;line-height:1">merlin<span style="color:#E9721F">.</span></span><p style="margin:6px 0 0;font-size:13px;font-weight:700;color:#E9721F;text-transform:uppercase;letter-spacing:2.5px;">${programa||'MDT'}</p></td></tr>`;
+    : `<tr><td style="background:#0a1628;padding:32px 36px;border-radius:12px 12px 0 0;border-bottom:4px solid #E9721F;"><span style="font-family:Arial,sans-serif;font-weight:700;font-size:30px;color:#3B82F6;letter-spacing:-0.5px;line-height:1">merlin<span style="color:#E9721F">.</span></span>${programa?`<p style="margin:6px 0 0;font-size:13px;font-weight:700;color:#E9721F;text-transform:uppercase;letter-spacing:2.5px;">${programa}</p>`:''}</td></tr>`;
 
   // Contenido: detectar si es HTML del editor enriquecido o texto plano
   const isHtmlBody = bodyText.trim().startsWith('<');
@@ -1014,7 +1015,7 @@ function buildHTML(studentName, bodyText, bannerUrl, programa, extraData){
 <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.10);">
   ${bannerSection}
   <tr><td style="background:#ffffff;padding:32px 36px 8px;">
-    <p style="margin:0 0 6px;font-size:11px;font-weight:700;color:#E9721F;text-transform:uppercase;letter-spacing:2px;">${programa||'MDT'}</p>
+    ${programa?`<p style="margin:0 0 6px;font-size:11px;font-weight:700;color:#E9721F;text-transform:uppercase;letter-spacing:2px;">${programa}</p>`:''}
     ${lines}
   </td></tr>
   ${contentImgHtml}
@@ -1127,7 +1128,7 @@ function removeProg(i){
 function fillProgSelects(){
   document.querySelectorAll('#f-prog-sel').forEach(sel=>{
     const cur=sel.value;
-    sel.innerHTML=programs.map(p=>`<option value="${p}"${p===cur?' selected':''}>${p}</option>`).join('');
+    sel.innerHTML='<option value="">— Sin programa (campaña libre) —</option>'+programs.map(p=>`<option value="${p}"${p===cur?' selected':''}>${p}</option>`).join('');
     const hid=document.getElementById('f-prog');
     if(hid&&!hid.value) hid.value=sel.value;
   });
@@ -1386,12 +1387,39 @@ async function sendSendPulse(toEmail,toName,subject,htmlBody){
 }
 
 // ── Preview ──
+function _prevShowEdit(){
+  const btn=document.getElementById('prev-edit-btn');
+  if(btn){btn.style.display='';btn.textContent='✏️ Editar';btn.className='btn btn-g btn-sm';btn.removeAttribute('data-editing');}
+}
+function togglePreviewEdit(){
+  const pb=document.getElementById('prev-html');
+  const iframe=pb?.querySelector('iframe');
+  if(!iframe){alert('Genera la vista previa primero.');return;}
+  const btn=document.getElementById('prev-edit-btn');
+  const isEditing=btn.getAttribute('data-editing')==='1';
+  if(isEditing){
+    try{iframe.contentDocument.designMode='off';}catch(e){}
+    btn.removeAttribute('data-editing');
+    btn.textContent='✏️ Editar';btn.className='btn btn-g btn-sm';
+  } else {
+    try{
+      const doc=iframe.contentDocument;
+      doc.designMode='on';
+      // Make images and tables draggable/selectable
+      doc.querySelectorAll('img').forEach(img=>{img.style.cursor='move';img.draggable=true;});
+      doc.querySelectorAll('td').forEach(td=>{td.style.cursor='text';});
+    }catch(e){}
+    btn.setAttribute('data-editing','1');
+    btn.textContent='✓ Listo';btn.className='btn btn-sm';btn.style.background='var(--purple)';btn.style.color='#fff';
+  }
+}
 async function preview(){
   const f=getF();const cfg=TIPOS[currentType];
   const st=students.find(s=>s.e)||{n:'Ana Ramirez',e:'a_ramirezdi@yahoo.es',p:programs[0]||'Merlin',extra:'',modulo:'',avance:'',estado:'',equipo:'',genero:'',edad:'',pendientes:'',ultimo_acceso:'',fecha_fin:'',fecha_inicio:''};
   const prog=st.p||f.prog||programs[0]||'';
   const bannerUrl=getActiveBannerUrlFromSel(prog,currentType);
   const ps=document.getElementById('prev-st'),pa=document.getElementById('prev-subj'),pb=document.getElementById('prev-html');
+  document.getElementById('prev-edit-btn').style.display='none';
   if(modoEnvio==='manual'){
     const manualAsunto=document.getElementById('manual-asunto')?.value.trim()||'';
     const manualCuerpo=document.getElementById('manual-cuerpo')?.value.trim()||'';
@@ -1431,6 +1459,7 @@ async function preview(){
       pb.className='prev-box prev-html';pb.style.padding='';
       pb.innerHTML=`<iframe srcdoc="${previewHtml.replace(/"/g,'&quot;')}" style="width:100%;border:none;border-radius:7px;min-height:400px;" onload="this.style.height=Math.min(this.contentDocument.body.scrollHeight+40,650)+'px'"></iframe>`;
       ps.innerHTML=`<span style="color:var(--green);font-size:12px">Vista previa de: <strong>${st.n}</strong></span>`;
+      _prevShowEdit();
     }
     return;
   }
@@ -1449,6 +1478,7 @@ async function preview(){
     pb.className='prev-box prev-html';
     pb.innerHTML=`<iframe srcdoc="${previewHtml.replace(/"/g,'&quot;')}" style="width:100%;border:none;border-radius:7px;min-height:400px;" onload="this.style.height=Math.min(this.contentDocument.body.scrollHeight+40,650)+'px'"></iframe>`;
     ps.innerHTML='<span style="color:var(--green);font-size:12px">Listo — correo HTML con banner</span>';
+    _prevShowEdit();
   }catch(e){pa.className='prev-box prev-subj';pa.textContent='Error: '+e.message;pb.className='prev-box prev-html empty';pb.textContent='';ps.innerHTML='<span style="color:var(--red);font-size:12px">Error</span>';}
 }
 
