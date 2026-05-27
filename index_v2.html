@@ -331,22 +331,6 @@ textarea{resize:vertical;line-height:1.6}
   </div>
 
   <div class="card">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-      <span class="card-ttl" style="margin:0">Vista previa HTML</span>
-      <span id="prev-mode-chip" class="chip"><span class="dot"></span>Claude</span>
-    </div>
-    <div class="brow" style="margin-bottom:12px">
-      <button id="prev-btn" class="btn btn-g btn-sm" onclick="preview()">Generar vista previa</button>
-      <span id="prev-st" style="font-size:12px;color:var(--muted)"></span>
-    </div>
-    <div class="prev-lbl">Asunto</div>
-    <div id="prev-subj" class="prev-box prev-subj empty" style="margin-bottom:10px">El asunto aparecerá aquí...</div>
-    <div class="prev-lbl">Correo renderizado</div>
-    <div id="prev-html" class="prev-box prev-html empty">El correo HTML aparecerá aquí...</div>
-    <p id="prev-hint" style="font-size:11px;color:var(--hint);margin-top:7px">Vista previa del primer estudiante con su banner según programa y tipo.</p>
-  </div>
-
-  <div class="card">
     <div class="card-ttl">Envío</div>
     <div class="from-row" style="margin-bottom:14px">
       <div class="from-info">
@@ -522,6 +506,22 @@ textarea{resize:vertical;line-height:1.6}
     </div>
     <div id="send-st"></div>
     <div id="send-log" class="log"></div>
+  </div>
+
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <span class="card-ttl" style="margin:0">Vista previa HTML</span>
+      <span id="prev-mode-chip" class="chip"><span class="dot"></span>Claude</span>
+    </div>
+    <div class="brow" style="margin-bottom:12px">
+      <button id="prev-btn" class="btn btn-g btn-sm" onclick="preview()">Generar vista previa</button>
+      <span id="prev-st" style="font-size:12px;color:var(--muted)"></span>
+    </div>
+    <div class="prev-lbl">Asunto</div>
+    <div id="prev-subj" class="prev-box prev-subj empty" style="margin-bottom:10px">El asunto aparecerá aquí...</div>
+    <div class="prev-lbl">Correo renderizado</div>
+    <div id="prev-html" class="prev-box prev-html empty">El correo HTML aparecerá aquí...</div>
+    <p id="prev-hint" style="font-size:11px;color:var(--hint);margin-top:7px">Vista previa del primer estudiante con su banner según programa y tipo.</p>
   </div>
 
   <!-- Modal programar envío -->
