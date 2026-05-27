@@ -1291,7 +1291,7 @@ function renderSt(){
     hdr.innerHTML=[...baseCols,'Teléfono',...extraCol].map(c=>`<span>${c}</span>`).join('')+'<span></span>';
   }
   if(!students.length){el.innerHTML='<p style="font-size:12px;color:var(--hint);font-style:italic;margin-bottom:7px">Sin estudiantes aún.</p>';return;}
-  const ST_MAX=100;
+  const ST_MAX=20;
   const visible=students.length>ST_MAX?students.slice(0,ST_MAX):students;
   const rowsHtml=visible.map(s=>`<div class="st-row" style="grid-template-columns:${gc}">
     <input value="${esc(s.n)}" placeholder="Nombre" oninput="updSt('${s.id}','n',this.value)"/>
