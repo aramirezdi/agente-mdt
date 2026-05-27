@@ -180,27 +180,29 @@ LOGIN_HTML = """<!DOCTYPE html>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>MDT Agente — Acceso</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Segoe UI',sans-serif;background:#0f0f12;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
-.card{background:#18181e;border:1px solid #2a2a36;border-radius:14px;padding:40px 36px;width:100%;max-width:380px}
+body{font-family:'Poppins','Segoe UI',sans-serif;background:#0d1117;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.card{background:#161b22;border:1px solid #2a3340;border-radius:14px;padding:40px 36px;width:100%;max-width:380px}
 .logo-wrap{text-align:center;margin-bottom:20px}
-.logo-wrap img{height:52px;object-fit:contain}
 h1{font-size:20px;font-weight:600;color:#eeeef5;text-align:center;margin-bottom:6px}
-p{font-size:13px;color:#8a8aaa;text-align:center;margin-bottom:28px}
-label{display:block;font-size:12px;color:#8a8aaa;font-weight:500;margin-bottom:5px}
-input{width:100%;padding:10px 13px;background:#202028;border:1px solid #2a2a36;border-radius:8px;color:#eeeef5;font-size:13px;outline:none;transition:border-color .18s;margin-bottom:16px}
-input:focus{border-color:#7c6ffc}
-input::placeholder{color:#4a4a62}
-button{width:100%;padding:11px;background:#7c6ffc;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;transition:background .15s;margin-top:4px}
-button:hover{background:#6b5ef0}
+p{font-size:13px;color:#8a9ab5;text-align:center;margin-bottom:28px}
+label{display:block;font-size:12px;color:#8a9ab5;font-weight:500;margin-bottom:5px}
+input{width:100%;padding:10px 13px;background:#1e2530;border:1px solid #2a3340;border-radius:8px;color:#eeeef5;font-size:13px;outline:none;transition:border-color .18s;margin-bottom:16px;font-family:'Poppins','Segoe UI',sans-serif}
+input:focus{border-color:#3B82F6}
+input::placeholder{color:#4a5568}
+button{width:100%;padding:11px;background:#3B82F6;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;transition:background .15s;margin-top:4px;font-family:'Poppins','Segoe UI',sans-serif}
+button:hover{background:#2d6ab4}
 .err{background:#2e0e0e;border:1px solid #5a2020;color:#f05252;padding:10px 13px;border-radius:7px;font-size:13px;margin-bottom:16px;display:none}
 .err.show{display:block}
 </style>
 </head>
 <body>
 <div class="card">
-  <div class="logo-wrap"><img src="https://merlin-global.com/assets/merlin-logo-BbzWVHUY.png" alt="Merlin"/></div>
+  <div class="logo-wrap">
+    <span style="font-family:'Poppins','Segoe UI',sans-serif;font-weight:700;font-size:36px;color:#3B82F6;letter-spacing:-0.5px;line-height:1">merlin<span style="color:#E9721F">.</span></span>
+  </div>
   <h1>Agente MDT</h1>
   <p>Ingresa tus credenciales para continuar</p>
   <div class="err" id="err"></div>
