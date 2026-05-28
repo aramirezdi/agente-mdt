@@ -800,16 +800,16 @@ textarea{resize:vertical;line-height:1.6}
       <div id="dash-tipo"></div>
     </div>
   </div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+  <div style="margin-bottom:12px">
     <div class="card">
       <div class="card-ttl">Actividad — últimos 14 días</div>
       <div id="dash-timeline-bars" class="tl-bar-row"></div>
       <div id="dash-timeline-labels" class="tl-label"></div>
     </div>
-    <div class="card">
-      <div class="card-ttl">Prueba A/B</div>
-      <div id="dash-ab"></div>
-    </div>
+  </div>
+  <div class="card">
+    <div class="card-ttl">Prueba A/B — análisis por grupo</div>
+    <div id="dash-ab"></div>
   </div>
 </div>
 
@@ -2206,14 +2206,58 @@ async function loadDashboard(){
     // A/B
     const abEl=document.getElementById('dash-ab');
     const ab=d.ab;
+    const abByCamp=d.ab_by_campaign||[];
     const hasAB=ab.A.sent>0||ab.B.sent>0;
+    function abWinner(gA,gB){
+      const rA=gA.sent>0?gA.opened/gA.sent:0, rB=gB.sent>0?gB.opened/gB.sent:0;
+      if(rA===rB) return '';
+      return rA>rB?'A':'B';
+    }
+    function abGroupHtml(g,data,isWinner){
+      const col=g==='A'?'var(--green)':'var(--purple)';
+      const subj=(data.subjects||[]).slice(0,2).join(' / ')||'—';
+      const w=isWinner?` <span style="font-size:10px;background:#2a3e2a;color:var(--green);border:1px solid var(--green-border);border-radius:4px;padding:1px 6px;font-weight:700">GANADOR</span>`:'';
+      return `<tr>
+        <td style="padding:8px 10px;border-bottom:1px solid var(--border)"><span style="font-weight:700;color:${col}">Grupo ${g}</span>${w}</td>
+        <td style="padding:8px 10px;border-bottom:1px solid var(--border);font-size:11px;color:var(--muted);max-width:280px;word-break:break-word">${esc(subj)}</td>
+        <td style="padding:8px 10px;border-bottom:1px solid var(--border);text-align:center">${data.sent}</td>
+        <td style="padding:8px 10px;border-bottom:1px solid var(--border);text-align:center">${data.opened}</td>
+        <td style="padding:8px 10px;border-bottom:1px solid var(--border);text-align:center"><strong style="color:${isWinner?'var(--green)':'inherit'}">${pct(data.opened,data.sent)}</strong></td>
+      </tr>`;
+    }
     if(hasAB){
-      abEl.innerHTML=`<table class="ab-table">
-        <tr><th>Grupo</th><th>Enviados</th><th>Abiertos</th><th>Tasa</th></tr>
-        <tr><td><span style="color:var(--green);font-weight:600">Grupo A</span></td><td>${ab.A.sent}</td><td>${ab.A.opened}</td><td><strong>${pct(ab.A.opened,ab.A.sent)}</strong></td></tr>
-        <tr><td><span style="color:var(--purple);font-weight:600">Grupo B</span></td><td>${ab.B.sent}</td><td>${ab.B.opened}</td><td><strong>${pct(ab.B.opened,ab.B.sent)}</strong></td></tr>
-      </table>
-      <p style="font-size:11px;color:var(--muted);margin-top:10px">El grupo con mayor tasa de apertura es el ganador.</p>`;
+      const winner=abWinner(ab.A,ab.B);
+      let html=`<table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead><tr style="font-size:10px;color:var(--hint)">
+          <th style="padding:6px 10px;text-align:left;border-bottom:2px solid var(--border)">Grupo</th>
+          <th style="padding:6px 10px;text-align:left;border-bottom:2px solid var(--border)">Asunto</th>
+          <th style="padding:6px 10px;text-align:center;border-bottom:2px solid var(--border)">Enviados</th>
+          <th style="padding:6px 10px;text-align:center;border-bottom:2px solid var(--border)">Abiertos</th>
+          <th style="padding:6px 10px;text-align:center;border-bottom:2px solid var(--border)">Tasa</th>
+        </tr></thead><tbody>
+        ${abGroupHtml('A',ab.A,winner==='A')}
+        ${abGroupHtml('B',ab.B,winner==='B')}
+      </tbody></table>`;
+      // Desglose por campaña si hay más de una
+      if(!_selectedCampaignId&&abByCamp.length>1){
+        html+=`<div style="margin-top:14px"><p style="font-size:11px;font-weight:600;color:var(--hint);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px">Por campaña</p>`;
+        abByCamp.forEach(c=>{
+          const w=abWinner(c.A,c.B);
+          html+=`<div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px">
+            <div style="font-size:11px;font-weight:600;color:var(--text);margin-bottom:6px">${esc(c.name)}</div>
+            <table style="width:100%;border-collapse:collapse;font-size:11px">
+              <tr><td style="width:60px;font-weight:600;color:var(--green);padding:3px 6px">A</td>
+                  <td style="color:var(--muted);padding:3px 6px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc((c.A.subjects||[])[0]||'—')}</td>
+                  <td style="text-align:right;padding:3px 6px;white-space:nowrap">${c.A.sent} env · ${pct(c.A.opened,c.A.sent)} apert ${w==='A'?'<span style="color:var(--green)">✓</span>':''}</td></tr>
+              <tr><td style="width:60px;font-weight:600;color:var(--purple);padding:3px 6px">B</td>
+                  <td style="color:var(--muted);padding:3px 6px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc((c.B.subjects||[])[0]||'—')}</td>
+                  <td style="text-align:right;padding:3px 6px;white-space:nowrap">${c.B.sent} env · ${pct(c.B.opened,c.B.sent)} apert ${w==='B'?'<span style="color:var(--green)">✓</span>':''}</td></tr>
+            </table>
+          </div>`;
+        });
+        html+='</div>';
+      }
+      abEl.innerHTML=html;
     }else{
       abEl.innerHTML='<p style="font-size:12px;color:var(--hint)">Aún no se han enviado correos con Prueba A/B.</p>';
     }

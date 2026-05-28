@@ -13,9 +13,9 @@ from datetime import datetime, timedelta
 
 USERS_FILE       = "users.json"
 CREDENTIALS_FILE = "credentials.json"
-BANNERS_DIR      = "banners"
-HISTORY_FILE     = "history.json"
-SCHEDULED_FILE   = "scheduled.json"
+BANNERS_DIR      = os.environ.get("BANNERS_PATH", "banners")
+HISTORY_FILE     = os.environ.get("HISTORY_PATH", "history.json")
+SCHEDULED_FILE   = os.environ.get("SCHEDULED_PATH", "scheduled.json")
 
 os.makedirs(BANNERS_DIR, exist_ok=True)
 SESSION_TTL      = 8  # horas
@@ -429,7 +429,10 @@ class Handler(BaseHTTPRequestHandler):
             opened = sum(1 for e in entries if e.get("opened"))
             by_prog = {}
             for e in entries:
-                prog = e.get("prog") or "(sin programa)"
+                prog = e.get("prog") or ""
+                # Ignorar valores que parecen emails o están vacíos
+                if not prog or "@" in prog:
+                    prog = "(sin programa)"
                 if prog not in by_prog: by_prog[prog] = {"sent":0,"err":0,"opened":0}
                 if e.get("ok"):      by_prog[prog]["sent"]   += 1
                 else:                by_prog[prog]["err"]    += 1
@@ -446,12 +449,32 @@ class Handler(BaseHTTPRequestHandler):
                 via = e.get("via","zoho")
                 if via not in by_via: by_via[via] = 0
                 if e.get("ok"): by_via[via] += 1
-            ab = {"A":{"sent":0,"opened":0},"B":{"sent":0,"opened":0}}
+            ab = {"A":{"sent":0,"opened":0,"subjects":[]},"B":{"sent":0,"opened":0,"subjects":[]}}
             for e in entries:
                 g = e.get("ab_group","")
                 if g in ("A","B"):
-                    if e.get("ok"):      ab[g]["sent"]   += 1
+                    if e.get("ok"):
+                        ab[g]["sent"] += 1
+                        subj = (e.get("asunto") or "").strip()
+                        if subj and subj not in ab[g]["subjects"]:
+                            ab[g]["subjects"].append(subj)
                     if e.get("opened"):  ab[g]["opened"] += 1
+            # A/B por campaña (para vista global)
+            ab_by_campaign = {}
+            for e in entries:
+                g = e.get("ab_group","")
+                cid = e.get("campaign_id","")
+                cname = e.get("campaign_name","") or cid[:8] if cid else ""
+                if g in ("A","B") and cid:
+                    if cid not in ab_by_campaign:
+                        ab_by_campaign[cid] = {"name":cname,"ts":e.get("ts",""),
+                            "A":{"sent":0,"opened":0,"subjects":[]},"B":{"sent":0,"opened":0,"subjects":[]}}
+                    if e.get("ok"):
+                        ab_by_campaign[cid][g]["sent"] += 1
+                        subj = (e.get("asunto") or "").strip()
+                        if subj and subj not in ab_by_campaign[cid][g]["subjects"]:
+                            ab_by_campaign[cid][g]["subjects"].append(subj)
+                    if e.get("opened"): ab_by_campaign[cid][g]["opened"] += 1
             timeline = {}
             for e in entries:
                 if e.get("ok") and e.get("ts"):
@@ -460,7 +483,8 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json({
                 "total":total,"sent":sent,"errors":errors,"opened":opened,
                 "by_prog":by_prog,"by_tipo":by_tipo,"by_via":by_via,
-                "ab":ab,"timeline":dict(sorted(timeline.items())[-14:])
+                "ab":ab,"ab_by_campaign":list(sorted(ab_by_campaign.values(),key=lambda x:x["ts"],reverse=True)),
+                "timeline":dict(sorted(timeline.items())[-14:])
             })
             return
         self.send_json({"error":"Not found"},404)
