@@ -971,9 +971,8 @@ def execute_scheduled_task(task):
     history   = []
     campaign_id   = task.get("campaign_id", secrets.token_urlsafe(8))
     campaign_name = task.get("campaign_name", f"{task.get('tipo','')} — {datetime.now().strftime('%d/%m/%Y')}")
-    server_url = os.environ.get("RAILWAY_PUBLIC_DOMAIN","")
-    if server_url: server_url = f"https://{server_url}"
-    else: server_url = creds.get("server_url","")
+    _domain = os.environ.get("CUSTOM_DOMAIN","") or os.environ.get("RAILWAY_PUBLIC_DOMAIN","")
+    server_url = f"https://{_domain}" if _domain else creds.get("server_url","")
     for st in students:
         try:
             # Llamar a Claude
