@@ -8,7 +8,7 @@ Servidor MDT Seguro v4
 """
 import json, hashlib, secrets, hmac, os, time, base64, shutil, threading
 import urllib.request, urllib.parse, urllib.error
-from http.server import HTTPServer, BaseHTTPRequestHandler
+from http.server import HTTPServer, BaseHTTPRequestHandler, ThreadingHTTPServer
 from datetime import datetime, timedelta
 
 USERS_FILE       = "users.json"
@@ -1065,7 +1065,7 @@ if __name__ == "__main__":
         scheduler_thread = threading.Thread(target=run_scheduled_tasks, daemon=True)
         scheduler_thread.start()
         print("  Scheduler: activo (revisa cada 30s)")
-        server = HTTPServer(("0.0.0.0", port), Handler)
+        server = ThreadingHTTPServer(("0.0.0.0", port), Handler)
         server.serve_forever()
     except OSError as e:
         print(f"\n  Error: {e}")
