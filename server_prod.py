@@ -934,7 +934,8 @@ def run_scheduled_tasks():
                     if not scheduled_at:
                         continue
                     try:
-                        scheduled_dt = datetime.fromisoformat(scheduled_at)
+                        # Normalizar: quitar "Z" y milisegundos para compatibilidad
+                        scheduled_dt = datetime.fromisoformat(scheduled_at.replace('Z','').split('.')[0])
                     except:
                         continue
                     if now >= scheduled_dt:

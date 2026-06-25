@@ -2640,8 +2640,9 @@ async function guardarProgramacion(){
   const svc   = document.getElementById('sch-service').value;
   const msg   = document.getElementById('sch-msg');
   if(!fecha||!hora){msg.style.color='var(--amber)';msg.textContent='Selecciona fecha y hora.';return;}
-  const scheduledAt = fecha+'T'+hora+':00';
-  if(new Date(scheduledAt) <= new Date()){msg.style.color='var(--amber)';msg.textContent='La fecha debe ser futura.';return;}
+  const localDt = new Date(fecha+'T'+hora+':00');
+  if(localDt <= new Date()){msg.style.color='var(--amber)';msg.textContent='La fecha debe ser futura.';return;}
+  const scheduledAt = localDt.toISOString(); // UTC para que el servidor compare correctamente
   const f=getF();
   const valid=students.filter(s=>s.n&&s.e);
   msg.innerHTML='<span class="spin" style="border-color:var(--purple);border-top-color:transparent"></span> Guardando...';
