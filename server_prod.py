@@ -981,41 +981,61 @@ def execute_scheduled_task(task):
             ev_nombre=evento.get("nombre",""); ev_fecha=evento.get("fecha","")
             ev_hora=evento.get("hora",""); ev_link=evento.get("link","")
             ab_group=st.get("ab_group","")
-            link_html = f'<a href="{ev_link}" style="color:#3B82F6">{ev_link}</a>' if ev_link else "(próximamente disponible)"
+            # Claude genera solo texto plano — el HTML lo construimos aquí
             prompt = (
-                f"Genera un correo HTML de {tipo_val} para el/la estudiante {nombre_val}.\n"
+                f"Redacta el contenido de un correo de {tipo_val} para el/la estudiante {nombre_val}.\n"
                 f"Programa: {prog_val or '(varios)'} | Evento: {ev_nombre} | Fecha: {ev_fecha} | Hora: {ev_hora} | Link: {ev_link or 'por confirmar'}\n"
-                f"El correo debe tener saludo personalizado, información clara del evento, recomendaciones breves y firma 'Equipo MDT'.\n"
-                f'Responde SOLO JSON válido: {{"asunto":"...","cuerpo":"<html completo con estilos inline>"}}'
-            )
-            system_msg = (
-                "Eres el asistente de comunicaciones de Merlin MDT. "
-                "Generas correos profesionales en español. "
-                "El campo 'cuerpo' debe ser HTML completo (<!DOCTYPE html>...) con estilos inline, "
-                "tipografía limpia, colores azul #3B82F6 y naranja #E9721F de la marca Merlin, "
-                "compatible con clientes de correo como Gmail y Yahoo. "
-                "Responde ÚNICAMENTE con JSON válido, sin texto adicional ni bloques de código."
+                f"Incluye: saludo personalizado, detalles del evento, 2-3 recomendaciones breves, cierre amigable.\n"
+                f'Responde SOLO con JSON: {{"asunto":"texto del asunto","parrafos":["parrafo1","parrafo2","parrafo3"]}}'
             )
             claude_r = _req_static(
                 "https://api.anthropic.com/v1/messages",
-                {"model":"claude-sonnet-4-6","max_tokens":2000,
-                 "system": system_msg,
+                {"model":"claude-sonnet-4-6","max_tokens":1000,
+                 "system": "Eres el asistente de comunicaciones de Merlin MDT. Generas contenido de correos profesionales en español. Responde ÚNICAMENTE con JSON válido sin bloques de código ni texto adicional.",
                  "messages":[{"role":"user","content":prompt}]},
                 {"Content-Type":"application/json","x-api-key":api_key,"anthropic-version":"2023-06-01"}
             )
             if "error" in claude_r and "content" not in claude_r:
                 raise Exception(f"Claude API error: {claude_r.get('error')}")
-            text = claude_r.get("content",[{}])[0].get("text","{}").replace("```json","").replace("```","").strip()
-            correo = json.loads(text)
-            if not correo.get("asunto") or not correo.get("cuerpo"):
-                raise Exception(f"Claude no generó contenido válido: {text[:100]}")
-            asunto = correo.get("asunto","Sin asunto")
-            cuerpo = correo.get("cuerpo","")
+            raw = claude_r.get("content",[{}])[0].get("text","{}").strip()
+            # Limpiar posibles bloques de código markdown
+            raw = raw.replace("```json","").replace("```","").strip()
+            correo = json.loads(raw)
+            if not correo.get("asunto"):
+                raise Exception(f"Claude no generó asunto: {raw[:120]}")
+            asunto = correo["asunto"]
+            parrafos = correo.get("parrafos", [correo.get("cuerpo","")])
+            # Construir HTML con template de marca Merlin
+            link_btn = (
+                f'<a href="{ev_link}" style="display:inline-block;margin:18px 0;padding:12px 28px;'
+                f'background:#3B82F6;color:#fff;text-decoration:none;border-radius:8px;font-weight:700;font-size:15px">'
+                f'Acceder al evento</a>'
+            ) if ev_link else ""
+            parrafos_html = "".join(f'<p style="margin:0 0 14px 0;color:#374151;font-size:15px;line-height:1.6">{p}</p>' for p in parrafos if p)
+            cuerpo = f"""<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f3f4f6;font-family:Arial,sans-serif">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:32px 0">
+<tr><td align="center">
+<table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%">
+  <tr><td style="background:#0d1117;padding:24px 32px;border-radius:12px 12px 0 0;text-align:center">
+    <span style="font-family:Arial,sans-serif;font-size:24px;font-weight:900;color:#fff">merlin<span style="color:#E9721F">.</span></span>
+  </td></tr>
+  <tr><td style="background:#fff;padding:32px;border-radius:0 0 12px 12px">
+    {parrafos_html}
+    {link_btn}
+    <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0">
+    <p style="margin:0;color:#6b7280;font-size:13px">
+      <strong>Equipo MDT</strong> · <a href="mailto:support@mdt.edu.pe" style="color:#3B82F6">support@mdt.edu.pe</a>
+    </p>
+  </td></tr>
+</table>
+</td></tr></table>
+</body></html>"""
             # Tracking pixel
             track_id = secrets.token_urlsafe(12)
             if server_url:
                 pixel = f'<img src="{server_url}/track/open/{track_id}" width="1" height="1" style="display:none" alt=""/>'
-                cuerpo = cuerpo + pixel if "</body>" not in cuerpo else cuerpo.replace("</body>", pixel+"</body>",1)
+                cuerpo = cuerpo.replace("</body>", pixel+"</body>", 1)
             # Enviar
             zepto_key = creds.get("zepto_api_key","")
             use_zepto = (service == "zeptomail") or (service == "auto" and zepto_key and len(students) > 20)
@@ -1023,7 +1043,8 @@ def execute_scheduled_task(task):
                 if not zepto_key:
                     raise Exception("ZeptoMail no configurado")
                 import re as _re
-                text_body = _re.sub(r'<[^>]+>', '', cuerpo).strip()
+                text_body = _re.sub(r'<[^>]+>', ' ', cuerpo)
+                text_body = _re.sub(r'\s+', ' ', text_body).strip()
                 zp = {
                     "from": {"address":"support@mail.mdt.edu.pe","name":"Equipo MDT"},
                     "reply_to": [{"address":"support@mdt.edu.pe","name":"Equipo MDT"}],
