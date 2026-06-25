@@ -987,13 +987,17 @@ def execute_scheduled_task(task):
                      +'\nJSON: {"asunto":"...","cuerpo":"..."}')
             claude_r = _req_static(
                 "https://api.anthropic.com/v1/messages",
-                {"model":"claude-sonnet-4-20250514","max_tokens":1000,
+                {"model":"claude-sonnet-4-6","max_tokens":1000,
                  "system":"Eres asistente de MDT. Genera correos en espanol. Responde solo JSON con asunto y cuerpo.",
                  "messages":[{"role":"user","content":prompt}]},
                 {"Content-Type":"application/json","x-api-key":api_key,"anthropic-version":"2023-06-01"}
             )
+            if "error" in claude_r and "content" not in claude_r:
+                raise Exception(f"Claude API error: {claude_r.get('error')}")
             text = claude_r.get("content",[{}])[0].get("text","{}").replace("```json","").replace("```","").strip()
             correo = json.loads(text)
+            if not correo.get("asunto") or not correo.get("cuerpo"):
+                raise Exception(f"Claude no generó contenido válido: {text[:100]}")
             asunto = correo.get("asunto","Sin asunto")
             cuerpo = correo.get("cuerpo","")
             # Tracking pixel
