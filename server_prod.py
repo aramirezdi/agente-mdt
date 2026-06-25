@@ -981,14 +981,25 @@ def execute_scheduled_task(task):
             ev_nombre=evento.get("nombre",""); ev_fecha=evento.get("fecha","")
             ev_hora=evento.get("hora",""); ev_link=evento.get("link","")
             ab_group=st.get("ab_group","")
-            prompt = ("Correo de "+tipo_val+" para estudiante: "+nombre_val
-                     +" | Programa: "+prog_val+" | Evento: "+ev_nombre
-                     +" | Fecha: "+ev_fecha+" | Hora: "+ev_hora+" | Link: "+ev_link
-                     +'\nJSON: {"asunto":"...","cuerpo":"..."}')
+            link_html = f'<a href="{ev_link}" style="color:#3B82F6">{ev_link}</a>' if ev_link else "(próximamente disponible)"
+            prompt = (
+                f"Genera un correo HTML de {tipo_val} para el/la estudiante {nombre_val}.\n"
+                f"Programa: {prog_val or '(varios)'} | Evento: {ev_nombre} | Fecha: {ev_fecha} | Hora: {ev_hora} | Link: {ev_link or 'por confirmar'}\n"
+                f"El correo debe tener saludo personalizado, información clara del evento, recomendaciones breves y firma 'Equipo MDT'.\n"
+                f'Responde SOLO JSON válido: {{"asunto":"...","cuerpo":"<html completo con estilos inline>"}}'
+            )
+            system_msg = (
+                "Eres el asistente de comunicaciones de Merlin MDT. "
+                "Generas correos profesionales en español. "
+                "El campo 'cuerpo' debe ser HTML completo (<!DOCTYPE html>...) con estilos inline, "
+                "tipografía limpia, colores azul #3B82F6 y naranja #E9721F de la marca Merlin, "
+                "compatible con clientes de correo como Gmail y Yahoo. "
+                "Responde ÚNICAMENTE con JSON válido, sin texto adicional ni bloques de código."
+            )
             claude_r = _req_static(
                 "https://api.anthropic.com/v1/messages",
-                {"model":"claude-sonnet-4-6","max_tokens":1000,
-                 "system":"Eres asistente de MDT. Genera correos en espanol. Responde solo JSON con asunto y cuerpo.",
+                {"model":"claude-sonnet-4-6","max_tokens":2000,
+                 "system": system_msg,
                  "messages":[{"role":"user","content":prompt}]},
                 {"Content-Type":"application/json","x-api-key":api_key,"anthropic-version":"2023-06-01"}
             )
@@ -1011,7 +1022,8 @@ def execute_scheduled_task(task):
             if use_zepto:
                 if not zepto_key:
                     raise Exception("ZeptoMail no configurado")
-                text_body = cuerpo  # cuerpo ya es texto plano desde Claude
+                import re as _re
+                text_body = _re.sub(r'<[^>]+>', '', cuerpo).strip()
                 zp = {
                     "from": {"address":"support@mail.mdt.edu.pe","name":"Equipo MDT"},
                     "reply_to": [{"address":"support@mdt.edu.pe","name":"Equipo MDT"}],
